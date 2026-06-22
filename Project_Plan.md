@@ -25,17 +25,17 @@ The MVP is complete when the [First Success Criteria](#first-success-criteria) c
 
 ## Tech Stack
 
-| Layer | Choice |
-| --- | --- |
-| Runtime | Bun |
-| Language | TypeScript (strict) |
-| Database | SQLite (local file) |
-| ORM | Drizzle ORM + drizzle-kit |
-| CLI UI | Ink (React for terminal) |
-| HTTP API | Fastify |
-| Validation | Zod |
-| Testing | Vitest |
-| Lint / format | ESLint + Prettier |
+| Layer         | Choice                    |
+| ------------- | ------------------------- |
+| Runtime       | Bun                       |
+| Language      | TypeScript (strict)       |
+| Database      | SQLite (local file)       |
+| ORM           | Drizzle ORM + drizzle-kit |
+| CLI UI        | Ink (React for terminal)  |
+| HTTP API      | Fastify                   |
+| Validation    | Zod                       |
+| Testing       | Vitest                    |
+| Lint / format | ESLint + Prettier         |
 
 ---
 
@@ -125,16 +125,16 @@ Research and prediction logic live outside forcast-kit.
 
 Environment variables (see `.env.example`):
 
-| Variable | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `FORCAST_KIT_DB_PATH` | No | `./data/forcast-kit.db` | SQLite file location |
-| `FORCAST_KIT_API_HOST` | No | `127.0.0.1` | API bind host |
-| `FORCAST_KIT_API_PORT` | No | `3847` | API bind port |
-| `KALSHI_API_BASE_URL` | No | `https://external-api.kalshi.com/trade-api/v2` | Kalshi REST base (`external-api` hosts are recommended; demo: `https://external-api.demo.kalshi.co/trade-api/v2`) |
-| `KALSHI_API_KEY_ID` | No | — | Only needed for authenticated endpoints |
-| `KALSHI_PRIVATE_KEY_PATH` | No | — | PEM path for RSA-PSS signing |
-| `SYNC_PAGE_LIMIT` | No | `200` | Max records per Kalshi page (API max: 200) |
-| `SYNC_REQUEST_DELAY_MS` | No | `100` | Delay between paginated requests |
+| Variable                  | Required | Default                                        | Purpose                                                                                                           |
+| ------------------------- | -------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `FORCAST_KIT_DB_PATH`     | No       | `./data/forcast-kit.db`                        | SQLite file location                                                                                              |
+| `FORCAST_KIT_API_HOST`    | No       | `127.0.0.1`                                    | API bind host                                                                                                     |
+| `FORCAST_KIT_API_PORT`    | No       | `3847`                                         | API bind port                                                                                                     |
+| `KALSHI_API_BASE_URL`     | No       | `https://external-api.kalshi.com/trade-api/v2` | Kalshi REST base (`external-api` hosts are recommended; demo: `https://external-api.demo.kalshi.co/trade-api/v2`) |
+| `KALSHI_API_KEY_ID`       | No       | —                                              | Only needed for authenticated endpoints                                                                           |
+| `KALSHI_PRIVATE_KEY_PATH` | No       | —                                              | PEM path for RSA-PSS signing                                                                                      |
+| `SYNC_PAGE_LIMIT`         | No       | `200`                                          | Max records per Kalshi page (API max: 200)                                                                        |
+| `SYNC_REQUEST_DELAY_MS`   | No       | `100`                                          | Delay between paginated requests                                                                                  |
 
 **Auth note:** Open market and event endpoints are publicly readable without credentials. Authenticated keys are optional for MVP sync and required only if future features call protected endpoints (orders, portfolio, higher rate tiers).
 
@@ -164,10 +164,10 @@ export interface FetchOptions {
 
 ### Implementations
 
-| Provider | Phase | Notes |
-| --- | --- | --- |
-| `KalshiProvider` | 2 | Primary MVP integration |
-| `PolymarketProvider` | 5 | Stub interface + `NotImplemented` until API client exists |
+| Provider             | Phase | Notes                                                     |
+| -------------------- | ----- | --------------------------------------------------------- |
+| `KalshiProvider`     | 2     | Primary MVP integration                                   |
+| `PolymarketProvider` | 5     | Stub interface + `NotImplemented` until API client exists |
 
 Everything downstream consumes **normalized** domain objects from `packages/core`, never raw Kalshi shapes.
 
@@ -177,12 +177,12 @@ Everything downstream consumes **normalized** domain objects from `packages/core
 
 ### Endpoints used
 
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /events?status=open&with_nested_markets=true&limit=200&cursor=…` | Primary bulk sync path |
-| `GET /events/{event_ticker}` | Event detail backfill |
-| `GET /markets/{ticker}` | Single market refresh |
-| `GET /events/multivariate?…` | Optional: combo events (Phase 3+) |
+| Endpoint                                                              | Purpose                           |
+| --------------------------------------------------------------------- | --------------------------------- |
+| `GET /events?status=open&with_nested_markets=true&limit=200&cursor=…` | Primary bulk sync path            |
+| `GET /events/{event_ticker}`                                          | Event detail backfill             |
+| `GET /markets/{ticker}`                                               | Single market refresh             |
+| `GET /events/multivariate?…`                                          | Optional: combo events (Phase 3+) |
 
 Base URL: `https://external-api.kalshi.com/trade-api/v2` (production, recommended). Demo: `https://external-api.demo.kalshi.co/trade-api/v2`. Alternate production host `https://api.elections.kalshi.com/trade-api/v2` also works.
 
@@ -194,19 +194,19 @@ Kalshi returns a `cursor` string; repeat requests until `cursor` is empty. Use `
 
 Kalshi uses dollar-denominated fixed-point strings (`yes_bid_dollars`, `volume_fp`, etc.). Normalize to:
 
-| Internal field | Kalshi source | Transform |
-| --- | --- | --- |
-| `yesBid` | `yes_bid_dollars` | `parseDecimal()` → number |
-| `yesAsk` | `yes_ask_dollars` | same |
-| `noBid` | `no_bid_dollars` | same |
-| `noAsk` | `no_ask_dollars` | same |
-| `lastPrice` | `last_price_dollars` | same |
-| `volume` | `volume_fp` | same |
-| `volume24h` | `volume_24h_fp` | same |
-| `openInterest` | `open_interest_fp` | same |
-| `liquidity` | `liquidity_dollars` | same |
-| `status` | `status` | map to internal enum |
-| `marketType` | `market_type` | `'binary' \| 'scalar'` |
+| Internal field | Kalshi source        | Transform                 |
+| -------------- | -------------------- | ------------------------- |
+| `yesBid`       | `yes_bid_dollars`    | `parseDecimal()` → number |
+| `yesAsk`       | `yes_ask_dollars`    | same                      |
+| `noBid`        | `no_bid_dollars`     | same                      |
+| `noAsk`        | `no_ask_dollars`     | same                      |
+| `lastPrice`    | `last_price_dollars` | same                      |
+| `volume`       | `volume_fp`          | same                      |
+| `volume24h`    | `volume_24h_fp`      | same                      |
+| `openInterest` | `open_interest_fp`   | same                      |
+| `liquidity`    | `liquidity_dollars`  | same                      |
+| `status`       | `status`             | map to internal enum      |
+| `marketType`   | `market_type`        | `'binary' \| 'scalar'`    |
 
 Store the full provider payload in `raw_json` unchanged.
 
@@ -222,14 +222,7 @@ Store the full provider payload in `raw_json` unchanged.
 ## Domain Models (`packages/core`)
 
 ```ts
-export type Focus =
-  | 'politics'
-  | 'weather'
-  | 'economics'
-  | 'technology'
-  | 'crypto'
-  | 'entertainment'
-  | 'sports';
+export type Focus = 'politics' | 'weather' | 'economics' | 'technology' | 'crypto' | 'entertainment' | 'sports';
 
 export type ProviderId = 'kalshi' | 'polymarket';
 
@@ -276,12 +269,12 @@ export interface NormalizedMarket {
 /** Investable side for binary markets (YES / NO) or scalar outcomes. */
 export interface NormalizedMarketSide {
   provider: ProviderId;
-  label: string;       // e.g. "Yes", "No", or scalar outcome label
+  label: string; // e.g. "Yes", "No", or scalar outcome label
   side: 'yes' | 'no' | 'other';
   bid: number | null;
   ask: number | null;
   price: number | null; // last traded or mid
-  investable: boolean;  // false when market closed or no quotes
+  investable: boolean; // false when market closed or no quotes
   rawJson: unknown;
 }
 ```
@@ -294,57 +287,57 @@ All tables use integer primary keys. Unique constraints prevent duplicate provid
 
 ### `events`
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | integer PK | |
-| `provider` | text | `'kalshi'` |
-| `external_event_id` | text | Provider-stable ID |
-| `event_ticker` | text | |
-| `series_ticker` | text | |
-| `title` | text | |
-| `subtitle` | text | |
-| `category` | text nullable | |
-| `settlement_sources_json` | text | JSON array |
-| `raw_json` | text | Full provider payload |
-| `created_at` | text | ISO timestamp |
-| `updated_at` | text | |
-| `last_seen_at` | text | Updated each sync |
+| Column                    | Type          | Notes                 |
+| ------------------------- | ------------- | --------------------- |
+| `id`                      | integer PK    |                       |
+| `provider`                | text          | `'kalshi'`            |
+| `external_event_id`       | text          | Provider-stable ID    |
+| `event_ticker`            | text          |                       |
+| `series_ticker`           | text          |                       |
+| `title`                   | text          |                       |
+| `subtitle`                | text          |                       |
+| `category`                | text nullable |                       |
+| `settlement_sources_json` | text          | JSON array            |
+| `raw_json`                | text          | Full provider payload |
+| `created_at`              | text          | ISO timestamp         |
+| `updated_at`              | text          |                       |
+| `last_seen_at`            | text          | Updated each sync     |
 
 **Indexes:** unique `(provider, event_ticker)`; index on `category`.
 
 ### `markets`
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | integer PK | |
-| `provider` | text | |
-| `external_market_id` | text | |
-| `ticker` | text | |
-| `event_ticker` | text FK → events | |
-| `series_ticker` | text | |
-| `title` | text | |
-| `subtitle` | text | |
-| `category` | text nullable | |
-| `market_type` | text | `'binary' \| 'scalar'` |
-| `status` | text | normalized lifecycle |
-| `close_time` | text | |
-| `expiration_time` | text nullable | |
-| `open_time` | text | |
-| `volume` | real | |
-| `volume_24h` | real | |
-| `liquidity` | real | |
-| `open_interest` | real | |
-| `yes_bid` | real nullable | |
-| `yes_ask` | real nullable | |
-| `no_bid` | real nullable | |
-| `no_ask` | real nullable | |
-| `last_price` | real nullable | |
-| `rules_primary` | text nullable | Agent-critical |
-| `rules_secondary` | text nullable | |
-| `raw_json` | text | |
-| `created_at` | text | |
-| `updated_at` | text | |
-| `last_seen_at` | text | |
+| Column               | Type             | Notes                  |
+| -------------------- | ---------------- | ---------------------- |
+| `id`                 | integer PK       |                        |
+| `provider`           | text             |                        |
+| `external_market_id` | text             |                        |
+| `ticker`             | text             |                        |
+| `event_ticker`       | text FK → events |                        |
+| `series_ticker`      | text             |                        |
+| `title`              | text             |                        |
+| `subtitle`           | text             |                        |
+| `category`           | text nullable    |                        |
+| `market_type`        | text             | `'binary' \| 'scalar'` |
+| `status`             | text             | normalized lifecycle   |
+| `close_time`         | text             |                        |
+| `expiration_time`    | text nullable    |                        |
+| `open_time`          | text             |                        |
+| `volume`             | real             |                        |
+| `volume_24h`         | real             |                        |
+| `liquidity`          | real             |                        |
+| `open_interest`      | real             |                        |
+| `yes_bid`            | real nullable    |                        |
+| `yes_ask`            | real nullable    |                        |
+| `no_bid`             | real nullable    |                        |
+| `no_ask`             | real nullable    |                        |
+| `last_price`         | real nullable    |                        |
+| `rules_primary`      | text nullable    | Agent-critical         |
+| `rules_secondary`    | text nullable    |                        |
+| `raw_json`           | text             |                        |
+| `created_at`         | text             |                        |
+| `updated_at`         | text             |                        |
+| `last_seen_at`       | text             |                        |
 
 **Indexes:** unique `(provider, ticker)`; index on `(status, close_time)`; index on `event_ticker`.
 
@@ -352,30 +345,30 @@ All tables use integer primary keys. Unique constraints prevent duplicate provid
 
 Replaces a generic "options" table. Binary Kalshi markets produce two rows (YES, NO).
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | integer PK | |
-| `provider` | text | |
-| `market_id` | integer FK → markets | |
-| `label` | text | Display label |
-| `side` | text | `'yes' \| 'no' \| 'other'` |
-| `bid` | real nullable | |
-| `ask` | real nullable | |
-| `price` | real nullable | |
-| `investable` | boolean | |
-| `raw_json` | text nullable | |
-| `created_at` | text | |
-| `updated_at` | text | |
+| Column       | Type                 | Notes                      |
+| ------------ | -------------------- | -------------------------- |
+| `id`         | integer PK           |                            |
+| `provider`   | text                 |                            |
+| `market_id`  | integer FK → markets |                            |
+| `label`      | text                 | Display label              |
+| `side`       | text                 | `'yes' \| 'no' \| 'other'` |
+| `bid`        | real nullable        |                            |
+| `ask`        | real nullable        |                            |
+| `price`      | real nullable        |                            |
+| `investable` | boolean              |                            |
+| `raw_json`   | text nullable        |                            |
+| `created_at` | text                 |                            |
+| `updated_at` | text                 |                            |
 
 **Indexes:** unique `(market_id, side)`.
 
 ### `market_focus_tags`
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | integer PK | |
-| `market_id` | integer FK → markets | |
-| `focus` | text | One of `Focus` enum values |
+| Column      | Type                 | Notes                      |
+| ----------- | -------------------- | -------------------------- |
+| `id`        | integer PK           |                            |
+| `market_id` | integer FK → markets |                            |
+| `focus`     | text                 | One of `Focus` enum values |
 
 **Indexes:** unique `(market_id, focus)`; index on `focus`.
 
@@ -383,18 +376,18 @@ Replaces a generic "options" table. Binary Kalshi markets produce two rows (YES,
 
 Audit trail for sync operations.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | integer PK | |
-| `provider` | text | |
-| `started_at` | text | |
-| `finished_at` | text nullable | |
-| `status` | text | `'running' \| 'success' \| 'partial' \| 'failed'` |
-| `events_upserted` | integer | |
-| `markets_upserted` | integer | |
-| `errors_count` | integer | |
-| `focus_filter_json` | text nullable | Serialized include/exclude |
-| `error_summary` | text nullable | |
+| Column              | Type          | Notes                                             |
+| ------------------- | ------------- | ------------------------------------------------- |
+| `id`                | integer PK    |                                                   |
+| `provider`          | text          |                                                   |
+| `started_at`        | text          |                                                   |
+| `finished_at`       | text nullable |                                                   |
+| `status`            | text          | `'running' \| 'success' \| 'partial' \| 'failed'` |
+| `events_upserted`   | integer       |                                                   |
+| `markets_upserted`  | integer       |                                                   |
+| `errors_count`      | integer       |                                                   |
+| `focus_filter_json` | text nullable | Serialized include/exclude                        |
+| `error_summary`     | text nullable |                                                   |
 
 Raw payload storage ensures future provider fields can be recovered without another migration.
 
@@ -406,15 +399,15 @@ Focus tags are derived at sync time from Kalshi `category`, `series_ticker`, and
 
 ### Mapping rules (initial)
 
-| Focus | Match conditions (any) |
-| --- | --- |
-| `politics` | category contains "Politics", "Elections"; series prefix `KXPRES`, `KXGOV`, `KXELECT` |
-| `weather` | category "Climate and Weather"; series prefix `KXHIGH`, `KXLOW`, `KXRAIN` |
-| `economics` | category "Economics", "Financials"; keywords: GDP, CPI, Fed, unemployment |
-| `technology` | category "Science and Technology"; keywords: AI, Apple, Google, OpenAI |
-| `crypto` | category "Crypto"; keywords: Bitcoin, Ethereum, BTC, ETH |
-| `entertainment` | category "Entertainment"; keywords: Oscar, Grammy, box office |
-| `sports` | category "Sports"; milestone type sports_* |
+| Focus           | Match conditions (any)                                                                |
+| --------------- | ------------------------------------------------------------------------------------- |
+| `politics`      | category contains "Politics", "Elections"; series prefix `KXPRES`, `KXGOV`, `KXELECT` |
+| `weather`       | category "Climate and Weather"; series prefix `KXHIGH`, `KXLOW`, `KXRAIN`             |
+| `economics`     | category "Economics", "Financials"; keywords: GDP, CPI, Fed, unemployment             |
+| `technology`    | category "Science and Technology"; keywords: AI, Apple, Google, OpenAI                |
+| `crypto`        | category "Crypto"; keywords: Bitcoin, Ethereum, BTC, ETH                              |
+| `entertainment` | category "Entertainment"; keywords: Oscar, Grammy, box office                         |
+| `sports`        | category "Sports"; milestone type sports\_\*                                          |
 
 A market may have multiple focus tags. Rules are data-driven (JSON config) so they can be tuned without schema changes.
 
@@ -461,14 +454,14 @@ Returns `{ "status": "ok", "db": "connected" }`.
 
 Query params:
 
-| Param | Type | Description |
-| --- | --- | --- |
-| `focus` | string | Comma-separated focus values (OR) |
+| Param     | Type   | Description                             |
+| --------- | ------ | --------------------------------------- |
+| `focus`   | string | Comma-separated focus values (OR)       |
 | `exclude` | string | Comma-separated focus values to exclude |
-| `status` | string | Filter by market status |
-| `q` | string | Title/ticker substring search |
-| `limit` | number | Page size |
-| `cursor` | string | Pagination cursor |
+| `status`  | string | Filter by market status                 |
+| `q`       | string | Title/ticker substring search           |
+| `limit`   | number | Page size                               |
+| `cursor`  | string | Pagination cursor                       |
 
 Response: `{ markets: MarketSummary[], cursor: string | null }`.
 
@@ -532,17 +525,17 @@ Ink renders sync progress (page count, records upserted, errors). Non-interactiv
 
 Each market record exposed to agents includes:
 
-| Field | Source |
-| --- | --- |
-| Question / title | `markets.title` |
-| Category | `markets.category` |
-| Event metadata | joined `events` row |
-| Close / expiration | `close_time`, `expiration_time` |
-| Volume, liquidity, open interest | numeric columns |
-| YES / NO bid-ask | `market_sides` or denormalized columns |
-| Settlement rules | `rules_primary`, `rules_secondary` |
-| Focus tags | `market_focus_tags` |
-| Raw payload | `raw_json` for forward compatibility |
+| Field                            | Source                                 |
+| -------------------------------- | -------------------------------------- |
+| Question / title                 | `markets.title`                        |
+| Category                         | `markets.category`                     |
+| Event metadata                   | joined `events` row                    |
+| Close / expiration               | `close_time`, `expiration_time`        |
+| Volume, liquidity, open interest | numeric columns                        |
+| YES / NO bid-ask                 | `market_sides` or denormalized columns |
+| Settlement rules                 | `rules_primary`, `rules_secondary`     |
+| Focus tags                       | `market_focus_tags`                    |
+| Raw payload                      | `raw_json` for forward compatibility   |
 
 ### Agent export (Phase 4)
 
@@ -626,14 +619,14 @@ No live Kalshi calls in CI — use fixtures only.
 
 ## Testing Strategy
 
-| Layer | What to test | Tool |
-| --- | --- | --- |
-| Normalizer | Kalshi fixture JSON → domain models | Vitest unit |
-| Focus rules | Category/keyword → tag mapping | Vitest unit |
+| Layer        | What to test                           | Tool                      |
+| ------------ | -------------------------------------- | ------------------------- |
+| Normalizer   | Kalshi fixture JSON → domain models    | Vitest unit               |
+| Focus rules  | Category/keyword → tag mapping         | Vitest unit               |
 | Repositories | Upsert idempotency, unique constraints | Vitest + in-memory SQLite |
-| SyncService | End-to-end with mocked provider | Vitest integration |
-| API routes | Request/response contracts | Vitest + Fastify inject |
-| CLI | Argument parsing (no Ink render) | Vitest unit |
+| SyncService  | End-to-end with mocked provider        | Vitest integration        |
+| API routes   | Request/response contracts             | Vitest + Fastify inject   |
+| CLI          | Argument parsing (no Ink render)       | Vitest unit               |
 
 Commit golden fixtures under `packages/providers/kalshi/fixtures/` from real (redacted) API responses.
 
@@ -715,14 +708,14 @@ Each phase has an **exit gate** — do not start the next phase until the gate p
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Kalshi API field renames / deprecation | Normalizer breaks | Store `raw_json`; version Zod schemas; fixture tests |
-| Rate limiting (429) | Sync incomplete | Backoff + `SYNC_REQUEST_DELAY_MS`; incremental sync |
-| Large open-market volume | Slow first sync | Pagination + progress UI; optional `series_ticker` filter |
-| Focus rules misclassify markets | Wrong agent inputs | Rules in editable JSON; multiple tags allowed; manual override hook (future) |
-| Binary vs scalar market shape differences | Missing sides | `market_type` discriminator; side derivation per type |
-| SQLite write contention | API slow during sync | Single-writer queue; sync runs sequentially |
+| Risk                                      | Impact               | Mitigation                                                                   |
+| ----------------------------------------- | -------------------- | ---------------------------------------------------------------------------- |
+| Kalshi API field renames / deprecation    | Normalizer breaks    | Store `raw_json`; version Zod schemas; fixture tests                         |
+| Rate limiting (429)                       | Sync incomplete      | Backoff + `SYNC_REQUEST_DELAY_MS`; incremental sync                          |
+| Large open-market volume                  | Slow first sync      | Pagination + progress UI; optional `series_ticker` filter                    |
+| Focus rules misclassify markets           | Wrong agent inputs   | Rules in editable JSON; multiple tags allowed; manual override hook (future) |
+| Binary vs scalar market shape differences | Missing sides        | `market_type` discriminator; side derivation per type                        |
+| SQLite write contention                   | API slow during sync | Single-writer queue; sync runs sequentially                                  |
 
 ---
 

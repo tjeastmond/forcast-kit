@@ -1,11 +1,4 @@
-export type Focus =
-  | 'politics'
-  | 'weather'
-  | 'economics'
-  | 'technology'
-  | 'crypto'
-  | 'entertainment'
-  | 'sports';
+export type Focus = 'politics' | 'weather' | 'economics' | 'technology' | 'crypto' | 'entertainment' | 'sports';
 
 export const FOCUS_VALUES = [
   'politics',

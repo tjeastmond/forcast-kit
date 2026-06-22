@@ -107,17 +107,12 @@
       "indexes": {
         "events_provider_event_ticker_unique": {
           "name": "events_provider_event_ticker_unique",
-          "columns": [
-            "provider",
-            "event_ticker"
-          ],
+          "columns": ["provider", "event_ticker"],
           "isUnique": true
         },
         "events_category_idx": {
           "name": "events_category_idx",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         }
       },
@@ -154,17 +149,12 @@
       "indexes": {
         "market_focus_tags_market_id_focus_unique": {
           "name": "market_focus_tags_market_id_focus_unique",
-          "columns": [
-            "market_id",
-            "focus"
-          ],
+          "columns": ["market_id", "focus"],
           "isUnique": true
         },
         "market_focus_tags_focus_idx": {
           "name": "market_focus_tags_focus_idx",
-          "columns": [
-            "focus"
-          ],
+          "columns": ["focus"],
           "isUnique": false
         }
       },
@@ -173,12 +163,8 @@
           "name": "market_focus_tags_market_id_markets_id_fk",
           "tableFrom": "market_focus_tags",
           "tableTo": "markets",
-          "columnsFrom": [
-            "market_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["market_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -281,10 +267,7 @@
       "indexes": {
         "market_sides_market_id_side_unique": {
           "name": "market_sides_market_id_side_unique",
-          "columns": [
-            "market_id",
-            "side"
-          ],
+          "columns": ["market_id", "side"],
           "isUnique": true
         }
       },
@@ -293,12 +276,8 @@
           "name": "market_sides_market_id_markets_id_fk",
           "tableFrom": "market_sides",
           "tableTo": "markets",
-          "columnsFrom": [
-            "market_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["market_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -525,25 +504,17 @@
       "indexes": {
         "markets_provider_ticker_unique": {
           "name": "markets_provider_ticker_unique",
-          "columns": [
-            "provider",
-            "ticker"
-          ],
+          "columns": ["provider", "ticker"],
           "isUnique": true
         },
         "markets_status_close_time_idx": {
           "name": "markets_status_close_time_idx",
-          "columns": [
-            "status",
-            "close_time"
-          ],
+          "columns": ["status", "close_time"],
           "isUnique": false
         },
         "markets_event_ticker_idx": {
           "name": "markets_event_ticker_idx",
-          "columns": [
-            "event_ticker"
-          ],
+          "columns": ["event_ticker"],
           "isUnique": false
         }
       },

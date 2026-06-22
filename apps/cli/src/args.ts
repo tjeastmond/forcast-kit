@@ -48,18 +48,12 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
   return { command, subcommand, positional, flags };
 }
 
-export function getFlagString(
-  flags: Readonly<Record<string, string | boolean>>,
-  key: string,
-): string | undefined {
+export function getFlagString(flags: Readonly<Record<string, string | boolean>>, key: string): string | undefined {
   const value = flags[key];
   return typeof value === 'string' ? value : undefined;
 }
 
-export function hasFlag(
-  flags: Readonly<Record<string, string | boolean>>,
-  key: string,
-): boolean {
+export function hasFlag(flags: Readonly<Record<string, string | boolean>>, key: string): boolean {
   return flags[key] === true || typeof flags[key] === 'string';
 }
 

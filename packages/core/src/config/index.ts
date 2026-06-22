@@ -4,10 +4,7 @@ const configSchema = z.object({
   FORCAST_KIT_DB_PATH: z.string().default('./data/forcast-kit.db'),
   FORCAST_KIT_API_HOST: z.string().default('127.0.0.1'),
   FORCAST_KIT_API_PORT: z.coerce.number().int().positive().default(3847),
-  KALSHI_API_BASE_URL: z
-    .string()
-    .url()
-    .default('https://external-api.kalshi.com/trade-api/v2'),
+  KALSHI_API_BASE_URL: z.string().url().default('https://external-api.kalshi.com/trade-api/v2'),
   KALSHI_API_KEY_ID: z.string().optional(),
   KALSHI_PRIVATE_KEY_PATH: z.string().optional(),
   SYNC_PAGE_LIMIT: z.coerce.number().int().positive().max(200).default(200),
