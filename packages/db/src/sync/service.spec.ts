@@ -8,29 +8,29 @@ import type {
 import { count, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { createRepositories } from '../repositories/index.js';
-import { markets } from '../schema/index.js';
+import { marketFocusTags, markets } from '../schema/index.js';
 import { createSyncService } from '../sync/service.js';
 import { createTestDatabase } from '../test-utils.js';
 
 const sampleEvent: NormalizedEvent = {
   provider: 'kalshi',
-  externalEventId: 'TEST-EVENT',
-  eventTicker: 'TEST-EVENT',
-  seriesTicker: 'TEST',
-  title: 'Test event',
+  externalEventId: 'KXPRES-24',
+  eventTicker: 'KXPRES-24',
+  seriesTicker: 'KXPRES',
+  title: '2024 Presidential Election',
   subtitle: 'Subtitle',
   category: 'Politics',
   settlementSources: ['Reuters'],
-  rawJson: { event_ticker: 'TEST-EVENT' },
+  rawJson: { event_ticker: 'KXPRES-24' },
 };
 
 const sampleMarket: NormalizedMarket = {
   provider: 'kalshi',
-  externalMarketId: 'TEST-MARKET',
-  ticker: 'TEST-MARKET',
-  eventTicker: 'TEST-EVENT',
-  seriesTicker: 'TEST',
-  title: 'Test market?',
+  externalMarketId: 'KXPRES-24-DEM',
+  ticker: 'KXPRES-24-DEM',
+  eventTicker: 'KXPRES-24',
+  seriesTicker: 'KXPRES',
+  title: 'Will a Democrat win the 2024 presidential election?',
   subtitle: '',
   category: 'Politics',
   marketType: 'binary',
@@ -49,13 +49,24 @@ const sampleMarket: NormalizedMarket = {
   lastPrice: 0.41,
   rulesPrimary: 'Test rules',
   rulesSecondary: null,
-  rawJson: { ticker: 'TEST-MARKET' },
+  rawJson: { ticker: 'KXPRES-24-DEM' },
+};
+
+const sportsMarket: NormalizedMarket = {
+  ...sampleMarket,
+  externalMarketId: 'KXNBA-25-LAL',
+  ticker: 'KXNBA-25-LAL',
+  eventTicker: 'KXNBA-25',
+  seriesTicker: 'KXNBA',
+  title: 'Lakers win NBA title?',
+  category: 'Sports',
+  rawJson: { ticker: 'KXNBA-25-LAL' },
 };
 
 const sampleSides: (NormalizedMarketSide & { marketTicker: string })[] = [
   {
     provider: 'kalshi',
-    marketTicker: 'TEST-MARKET',
+    marketTicker: 'KXPRES-24-DEM',
     label: 'Yes',
     side: 'yes',
     bid: 0.4,
@@ -66,7 +77,7 @@ const sampleSides: (NormalizedMarketSide & { marketTicker: string })[] = [
   },
   {
     provider: 'kalshi',
-    marketTicker: 'TEST-MARKET',
+    marketTicker: 'KXPRES-24-DEM',
     label: 'No',
     side: 'no',
     bid: 0.58,
@@ -77,18 +88,14 @@ const sampleSides: (NormalizedMarketSide & { marketTicker: string })[] = [
   },
 ];
 
-const sampleBatch: ProviderEventBatch = {
-  events: [sampleEvent],
-  markets: [sampleMarket],
-  sides: sampleSides,
-};
-
-/* eslint-disable @typescript-eslint/require-await -- mock provider */
 class MockProvider implements PredictionMarketProvider {
   readonly id = 'kalshi' as const;
 
+  constructor(private readonly batch: ProviderEventBatch) {}
+
+  /* eslint-disable @typescript-eslint/require-await -- mock provider */
   async *fetchOpenEvents(): AsyncGenerator<ProviderEventBatch> {
-    yield sampleBatch;
+    yield this.batch;
   }
 
   fetchMarket(): Promise<null> {
@@ -101,7 +108,11 @@ describe('SyncService', () => {
     const db = createTestDatabase();
     const repos = createRepositories(db);
     const syncService = createSyncService(repos);
-    const provider = new MockProvider();
+    const provider = new MockProvider({
+      events: [sampleEvent],
+      markets: [sampleMarket],
+      sides: sampleSides,
+    });
 
     const result = await syncService.syncProvider(provider);
 
@@ -111,13 +122,38 @@ describe('SyncService', () => {
 
     const [marketCount] = await db.select({ value: count() }).from(markets);
     expect(marketCount?.value).toBe(1);
+
+    const tags = await db.select().from(marketFocusTags);
+    expect(tags.some((row) => row.focus === 'politics')).toBe(true);
+  });
+
+  it('filters markets by focus during sync', async () => {
+    const db = createTestDatabase();
+    const repos = createRepositories(db);
+    const syncService = createSyncService(repos);
+    const provider = new MockProvider({
+      events: [sampleEvent, { ...sampleEvent, eventTicker: 'KXNBA-25', externalEventId: 'KXNBA-25' }],
+      markets: [sampleMarket, sportsMarket],
+      sides: sampleSides,
+    });
+
+    const result = await syncService.syncProvider(provider, { focus: ['politics'] });
+
+    expect(result.marketsUpserted).toBe(1);
+    const rows = await db.select().from(markets);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.ticker).toBe('KXPRES-24-DEM');
   });
 
   it('upserts idempotently on repeated sync', async () => {
     const db = createTestDatabase();
     const repos = createRepositories(db);
     const syncService = createSyncService(repos);
-    const provider = new MockProvider();
+    const provider = new MockProvider({
+      events: [sampleEvent],
+      markets: [sampleMarket],
+      sides: sampleSides,
+    });
 
     await syncService.syncProvider(provider);
     await syncService.syncProvider(provider);
