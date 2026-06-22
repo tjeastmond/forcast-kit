@@ -1,4 +1,4 @@
-import { loadConfig, logger } from '@forcast-kit/core';
+import { loadConfig, logger, createProviderRegistry } from '@forcast-kit/core';
 import type { DatabaseClient } from '@forcast-kit/db';
 import {
   checkDatabaseConnection,
@@ -8,6 +8,7 @@ import {
   createSyncService,
 } from '@forcast-kit/db';
 import { KalshiProvider } from '@forcast-kit/provider-kalshi';
+import { PolymarketProvider } from '@forcast-kit/provider-polymarket';
 import Fastify from 'fastify';
 import { eventRoutes, marketRoutes, syncRoutes } from './routes/markets.js';
 import { healthRoutes } from './routes/health.js';
@@ -19,6 +20,7 @@ export async function buildApp(options?: { db?: DatabaseClient }) {
   const query = createQueryServices(db);
   const sync = createSyncService(repos);
   const kalshiProvider = new KalshiProvider(config);
+  const providers = createProviderRegistry([kalshiProvider, new PolymarketProvider()]);
 
   const app = Fastify({ logger: false });
 
@@ -26,6 +28,7 @@ export async function buildApp(options?: { db?: DatabaseClient }) {
   app.decorate('db', db);
   app.decorate('query', query);
   app.decorate('sync', sync);
+  app.decorate('providers', providers);
   app.decorate('kalshiProvider', kalshiProvider);
 
   await app.register(healthRoutes);
@@ -64,6 +67,7 @@ declare module 'fastify' {
     db: ReturnType<typeof createDatabase>;
     query: ReturnType<typeof createQueryServices>;
     sync: ReturnType<typeof createSyncService>;
+    providers: ReturnType<typeof createProviderRegistry>;
     kalshiProvider: KalshiProvider;
   }
 }

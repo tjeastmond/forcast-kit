@@ -7,6 +7,7 @@ export interface SyncOptions {
   readonly focus?: readonly Focus[];
   readonly exclude?: readonly Focus[];
   readonly minUpdatedTs?: number;
+  readonly full?: boolean;
   readonly status?: 'open' | 'closed' | 'settled';
   readonly maxPages?: number;
 }
@@ -63,17 +64,35 @@ export class SyncService {
     let marketsUpserted = 0;
     let errorsCount = 0;
     const errorMessages: string[] = [];
+    const seenMarketIds = new Set<number>();
 
-    const filterOptions: FocusFilterOptions = {
+    let resolvedMinUpdatedTs = options?.minUpdatedTs;
+    if (options?.full !== true && resolvedMinUpdatedTs === undefined) {
+      const lastTs = await this.repos.syncRuns.getLastSuccessfulMinUpdatedTs(provider.id);
+      if (lastTs !== null) {
+        resolvedMinUpdatedTs = lastTs;
+      }
+    }
+
+    const resolvedOptions: SyncOptions = {
       ...(options?.focus !== undefined ? { focus: options.focus } : {}),
       ...(options?.exclude !== undefined ? { exclude: options.exclude } : {}),
+      ...(options?.status !== undefined ? { status: options.status } : {}),
+      ...(options?.maxPages !== undefined ? { maxPages: options.maxPages } : {}),
+      ...(options?.full === true ? { full: true } : {}),
+      ...(resolvedMinUpdatedTs !== undefined ? { minUpdatedTs: resolvedMinUpdatedTs } : {}),
+    };
+
+    const filterOptions: FocusFilterOptions = {
+      ...(resolvedOptions.focus !== undefined ? { focus: resolvedOptions.focus } : {}),
+      ...(resolvedOptions.exclude !== undefined ? { exclude: resolvedOptions.exclude } : {}),
     };
 
     try {
       for await (const batch of provider.fetchOpenEvents({
-        status: options?.status ?? 'open',
-        ...(options?.minUpdatedTs !== undefined ? { minUpdatedTs: options.minUpdatedTs } : {}),
-        ...(options?.maxPages !== undefined ? { maxPages: options.maxPages } : {}),
+        status: resolvedOptions.status ?? 'open',
+        ...(resolvedOptions.minUpdatedTs !== undefined ? { minUpdatedTs: resolvedOptions.minUpdatedTs } : {}),
+        ...(resolvedOptions.maxPages !== undefined ? { maxPages: resolvedOptions.maxPages } : {}),
       })) {
         for (const event of batch.events) {
           const eventMarkets = batch.markets.filter((market) => market.eventTicker === event.eventTicker);
@@ -96,6 +115,7 @@ export class SyncService {
               const marketId = await this.repos.markets.upsert(market);
               await this.repos.marketFocusTags.replaceTags(marketId, focusTags);
               marketIdByTicker.set(market.ticker, marketId);
+              seenMarketIds.add(marketId);
               marketsUpserted += 1;
             } catch (error) {
               errorsCount += 1;
@@ -131,6 +151,11 @@ export class SyncService {
 
       const status: SyncRunStatus = errorsCount > 0 ? 'partial' : 'success';
       const errorSummary = errorMessages.length > 0 ? errorMessages.slice(0, 10).join('; ') : null;
+
+      const isFullSync = resolvedOptions.full === true || resolvedOptions.minUpdatedTs === undefined;
+      if (isFullSync) {
+        await this.repos.markets.markStaleExcept(provider.id, seenMarketIds);
+      }
 
       await this.repos.syncRuns.finish(syncRunId, {
         status,

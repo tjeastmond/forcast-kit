@@ -1,4 +1,4 @@
-import { deriveFocusTags } from '@forcast-kit/core';
+import { deriveFocusTags, marketExportV1Schema } from '@forcast-kit/core';
 import type { NormalizedMarket } from '@forcast-kit/core';
 import { createQueryServices } from '@forcast-kit/db/query';
 import { createRepositories } from '@forcast-kit/db/repositories';
@@ -64,5 +64,27 @@ describe('API market routes', () => {
     expect(detailResponse.statusCode).toBe(200);
     const detail: { focusTags: string[] } = detailResponse.json();
     expect(detail.focusTags).toContain('politics');
+  });
+
+  it('returns agent export JSON for a market', async () => {
+    const db = createTestDatabase();
+    const repos = createRepositories(db);
+    const marketId = await repos.markets.upsert(politicsMarket);
+    await repos.marketFocusTags.replaceTags(marketId, deriveFocusTags(politicsMarket));
+
+    const app = Fastify({ logger: false });
+    app.decorate('query', createQueryServices(db));
+    await app.register(marketRoutes);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/markets/KXPRES-24-DEM/export',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = marketExportV1Schema.parse(response.json());
+    expect(body.schemaVersion).toBe('1.0');
+    expect(body.ticker).toBe('KXPRES-24-DEM');
+    expect(body.pricing.impliedProbability).toBeCloseTo(0.41);
   });
 });

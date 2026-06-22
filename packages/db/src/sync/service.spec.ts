@@ -161,6 +161,36 @@ describe('SyncService', () => {
     const [marketCount] = await db.select({ value: count() }).from(markets);
     expect(marketCount?.value).toBe(1);
   });
+
+  it('marks markets not seen in a full sync as stale', async () => {
+    const db = createTestDatabase();
+    const repos = createRepositories(db);
+    const syncService = createSyncService(repos);
+
+    const oldMarket: NormalizedMarket = {
+      ...sampleMarket,
+      externalMarketId: 'OLD-MARKET',
+      ticker: 'OLD-MARKET',
+      title: 'Old market no longer returned',
+    };
+
+    await repos.markets.upsert(oldMarket);
+
+    const provider = new MockProvider({
+      events: [sampleEvent],
+      markets: [sampleMarket],
+      sides: sampleSides,
+    });
+
+    await syncService.syncProvider(provider, { full: true });
+
+    const rows = await db.select().from(markets);
+    const oldRow = rows.find((row) => row.ticker === 'OLD-MARKET');
+    const currentRow = rows.find((row) => row.ticker === 'KXPRES-24-DEM');
+
+    expect(oldRow?.isStale).toBe(true);
+    expect(currentRow?.isStale).toBe(false);
+  });
 });
 
 describe('EventRepository', () => {

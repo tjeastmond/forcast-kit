@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-22
+
+### Added
+
+- **Phase 5 — Multi-provider foundation**
+  - `ProviderRegistry` for registering Kalshi and Polymarket providers
+  - API `POST /sync` resolves provider via registry (`kalshi`, `polymarket` stub)
+  - Polymarket field-mapping design doc (`packages/providers/polymarket/DESIGN.md`)
+  - GitHub Actions CI workflow (typecheck, lint, test)
+
+## [0.4.0] - 2026-06-22
+
+### Added
+
+- **Phase 4 — Agent export**
+  - `GET /markets/:ticker/export` stable JSON schema v1.0 for LLM context
+  - Derived metrics: spread, mid price, implied probability
+  - Incremental sync via `min_updated_ts` from last successful run
+  - `is_stale` column and stale-market flagging on full sync (`--full` / `full: true`)
+
 ## [0.3.0] - 2026-06-22
 
 ### Added

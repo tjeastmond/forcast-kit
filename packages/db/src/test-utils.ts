@@ -8,7 +8,8 @@ import * as schema from './schema/index.js';
 
 export function createTestDatabase(): DatabaseClient {
   const sqlite = new Database(':memory:');
-  const migrationPath = join(dirname(fileURLToPath(import.meta.url)), '../migrations/0000_omniscient_kree.sql');
-  sqlite.exec(readFileSync(migrationPath, 'utf8'));
+  const migrationDir = join(dirname(fileURLToPath(import.meta.url)), '../migrations');
+  sqlite.exec(readFileSync(join(migrationDir, '0000_omniscient_kree.sql'), 'utf8'));
+  sqlite.exec(readFileSync(join(migrationDir, '0001_add_market_stale.sql'), 'utf8'));
   return drizzle(sqlite, { schema }) as unknown as DatabaseClient;
 }

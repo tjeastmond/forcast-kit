@@ -1,5 +1,6 @@
-import type { Focus } from '@forcast-kit/core';
+import type { Focus, ProviderId } from '@forcast-kit/core';
 import { parseFocusList } from '@forcast-kit/core';
+import { marketDetailToExport } from '@forcast-kit/db/export';
 import type { FastifyPluginCallback } from 'fastify';
 
 function parseLimit(value: string | undefined): number | undefined {
@@ -43,6 +44,17 @@ export const marketRoutes: FastifyPluginCallback = (app, _opts, done) => {
       return { error: 'Market not found' };
     }
     return market;
+  });
+
+  app.get('/markets/:ticker/export', async (request, reply) => {
+    const { ticker } = request.params as { ticker: string };
+    const market = await app.query.markets.getMarketByTicker(ticker);
+    if (!market) {
+      reply.code(404);
+      return { error: 'Market not found' };
+    }
+
+    return marketDetailToExport(market);
   });
 
   done();
@@ -92,16 +104,14 @@ interface SyncBody {
 export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.post('/sync', async (request) => {
     const body = (request.body ?? {}) as SyncBody;
-    const provider = body.provider ?? 'kalshi';
+    const providerId = (body.provider ?? 'kalshi') as ProviderId;
+    const provider = app.providers.require(providerId);
 
-    if (provider !== 'kalshi') {
-      throw new Error(`Unsupported provider: ${provider}`);
-    }
-
-    const { syncRunId } = await app.sync.startBackgroundSync(app.kalshiProvider, {
+    const { syncRunId } = await app.sync.startBackgroundSync(provider, {
       ...(body.focus !== undefined ? { focus: body.focus } : {}),
       ...(body.exclude !== undefined ? { exclude: body.exclude } : {}),
       ...(body.maxPages !== undefined ? { maxPages: body.maxPages } : {}),
+      ...(body.full === true ? { full: true } : {}),
     });
 
     return { syncRunId, status: 'running' };

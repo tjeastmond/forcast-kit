@@ -6,7 +6,7 @@ import type {
   SyncRunStatus,
 } from '@forcast-kit/core';
 import type { Focus } from '@forcast-kit/core';
-import { eq } from 'drizzle-orm';
+import { and, eq, notInArray, or, desc } from 'drizzle-orm';
 import { events, marketFocusTags, marketSides, markets, syncRuns } from '../schema/index.js';
 import type { DatabaseClient } from '../database-client.js';
 
@@ -87,6 +87,7 @@ export class MarketRepository {
       rawJson: JSON.stringify(market.rawJson),
       updatedAt: now,
       lastSeenAt: now,
+      isStale: false,
     };
 
     const [row] = await this._db
@@ -103,6 +104,21 @@ export class MarketRepository {
     }
 
     return row.id;
+  }
+
+  async markStaleExcept(provider: ProviderId, seenMarketIds: ReadonlySet<number>): Promise<void> {
+    const now = isoNow();
+    const seenIds = [...seenMarketIds];
+
+    if (seenIds.length === 0) {
+      await this._db.update(markets).set({ isStale: true, updatedAt: now }).where(eq(markets.provider, provider));
+      return;
+    }
+
+    await this._db
+      .update(markets)
+      .set({ isStale: true, updatedAt: now })
+      .where(and(eq(markets.provider, provider), notInArray(markets.id, seenIds)));
   }
 }
 
@@ -195,6 +211,26 @@ export class SyncRunRepository {
         errorSummary: input.errorSummary ?? null,
       })
       .where(eq(syncRuns.id, id));
+  }
+
+  async getLastSuccessfulMinUpdatedTs(provider: ProviderId): Promise<number | null> {
+    const [row] = await this._db
+      .select({ finishedAt: syncRuns.finishedAt })
+      .from(syncRuns)
+      .where(and(eq(syncRuns.provider, provider), or(eq(syncRuns.status, 'success'), eq(syncRuns.status, 'partial'))))
+      .orderBy(desc(syncRuns.finishedAt))
+      .limit(1);
+
+    if (!row?.finishedAt) {
+      return null;
+    }
+
+    const ms = Date.parse(row.finishedAt);
+    if (!Number.isFinite(ms)) {
+      return null;
+    }
+
+    return Math.floor(ms / 1000);
   }
 }
 

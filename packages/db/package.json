@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./query": "./src/query/index.ts",
     "./repositories": "./src/repositories/index.ts",
-    "./test-utils": "./src/test-utils.ts"
+    "./test-utils": "./src/test-utils.ts",
+    "./export": "./src/export/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

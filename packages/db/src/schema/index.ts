@@ -68,6 +68,7 @@ export const markets = sqliteTable(
     lastSeenAt: text('last_seen_at')
       .notNull()
       .default(sql`(datetime('now'))`),
+    isStale: integer('is_stale', { mode: 'boolean' }).notNull().default(false),
   },
   (table) => [
     uniqueIndex('markets_provider_ticker_unique').on(table.provider, table.ticker),
