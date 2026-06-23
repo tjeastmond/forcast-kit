@@ -161,22 +161,22 @@ forecast-kit/
 
 Run all commands from the repo root with **Bun**.
 
-| Script        | Command                                              | Purpose                                                  |
-| ------------- | ---------------------------------------------------- | -------------------------------------------------------- |
-| `dev`         | `bun run apps/cli/src/index.tsx`                     | Run CLI interactively (Ink UI)                           |
-| `serve`       | `bun run apps/api/src/index.ts`                      | Start Fastify API on `127.0.0.1:3847`                    |
-| `ui`          | `bun run scripts/dev-explore.ts`                     | Clean `.next`, start API + UI; SIGTERM/SIGINT stops both |
-| `ui:app`      | `bun run --filter @forecast-kit/ui dev`              | Next.js UI only (API must already be running)            |
-| `ui:build`    | `bun run --filter @forecast-kit/ui build`            | Production build of explorer UI                          |
-| `dev:explore` | `bun run ui`                                         | Alias for `ui`                                           |
-| `sync:kalshi` | `bun run apps/cli/src/index.tsx sync kalshi --no-ui` | Non-interactive Kalshi sync                              |
-| `db:generate` | `drizzle-kit generate`                               | Generate migration from schema changes                   |
-| `db:migrate`  | `drizzle-kit migrate`                                | Apply migrations (uses `better-sqlite3`)                 |
-| `lint`        | `eslint .`                                           | ESLint (strict TypeScript rules)                         |
-| `format`      | `prettier --write .`                                 | Format entire repo                                       |
-| `typecheck`   | `tsc --build`                                        | Project-reference TypeScript build                       |
-| `test`        | `vitest run`                                         | Run all `**/*.spec.ts` tests once                        |
-| `test:watch`  | `vitest`                                             | Watch mode for tests                                     |
+| Script        | Command                                              | Purpose                                                      |
+| ------------- | ---------------------------------------------------- | ------------------------------------------------------------ |
+| `dev`         | `bun run apps/cli/src/index.tsx`                     | Run CLI interactively (Ink UI)                               |
+| `serve`       | `bun run apps/api/src/index.ts`                      | Start Fastify API on `127.0.0.1:3847`                        |
+| `ui`          | `bun run scripts/dev-explore.ts`                     | Clean `.next`, start API + UI; SIGTERM/SIGINT stops both     |
+| `ui:app`      | `bun run --filter @forecast-kit/ui dev`              | Clean `.next`, Next.js UI only (API must already be running) |
+| `ui:build`    | `bun run --filter @forecast-kit/ui build`            | Production build of explorer UI                              |
+| `dev:explore` | `bun run ui`                                         | Alias for `ui`                                               |
+| `sync:kalshi` | `bun run apps/cli/src/index.tsx sync kalshi --no-ui` | Non-interactive Kalshi sync                                  |
+| `db:generate` | `drizzle-kit generate`                               | Generate migration from schema changes                       |
+| `db:migrate`  | `drizzle-kit migrate`                                | Apply migrations (uses `better-sqlite3`)                     |
+| `lint`        | `eslint .`                                           | ESLint (strict TypeScript rules)                             |
+| `format`      | `prettier --write .`                                 | Format entire repo                                           |
+| `typecheck`   | `tsc --build`                                        | Project-reference TypeScript build                           |
+| `test`        | `vitest run`                                         | Run all `**/*.spec.ts` tests once                            |
+| `test:watch`  | `vitest`                                             | Watch mode for tests                                         |
 
 ### Typical verification loop
 
@@ -396,14 +396,15 @@ Do **not** import `@forecast-kit/db` main entry in Vitest-only test files if you
 
 ### Versioning
 
-| Rule                | Detail                                                                     |
-| ------------------- | -------------------------------------------------------------------------- |
-| **Current release** | `0.5.0` (MVP complete). Historical `0.1.0`–`0.5.0` entries stay as-is.     |
-| **Day-to-day**      | Log changes under `[Unreleased]` in `CHANGELOG.md`.                        |
-| **Default bump**    | **Patch** only — `0.5.1`, `0.5.2`, … when cutting a release.               |
-| **Minor bump**      | `0.6.0` only when the user explicitly asks or agrees to a larger release.  |
-| **Major / 1.0.0**   | Only on explicit user instruction. Do not promote to `1.0.0` autonomously. |
-| **Avoid**           | One minor version per phase, milestone, or significant commit.             |
+| Rule                | Detail                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Current release** | `0.5.0` (MVP complete). `CHANGELOG.md` sections are titled by **date** (`## [YYYY-MM-DD]`; same-day follow-ups use `## [YYYY-MM-DD] 2`, `## [YYYY-MM-DD] 3`, …). |
+| **Day-to-day**      | Log changes under `[Unreleased]` in `CHANGELOG.md`; cut a dated release section when shipping.                                                                   |
+| **Semver labels**   | Optional in section body (e.g. `Release 0.5.0`); headings use dates, not version numbers.                                                                        |
+| **Default bump**    | **Patch** only — `0.5.1`, `0.5.2`, … when cutting a semver-tagged release.                                                                                       |
+| **Minor bump**      | `0.6.0` only when the user explicitly asks or agrees to a larger release.                                                                                        |
+| **Major / 1.0.0**   | Only on explicit user instruction. Do not promote to `1.0.0` autonomously.                                                                                       |
+| **Avoid**           | One minor version per phase, milestone, or significant commit.                                                                                                   |
 
 Do not bump `package.json` workspace versions (`0.0.0` placeholders) unless the user asks; **`CHANGELOG.md` is the product version source of truth.**
 
@@ -438,7 +439,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 ## Learned User Preferences
 
-- Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **patch** release (`0.5.x`) when appropriate — do not bump minor/major without explicit user approval.
+- Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **dated** release section when shipping (optional semver label in body; default patch bump `0.5.x` when tagging) — do not bump minor/major without explicit user approval.
 - Before every **commit or push**, run `bun run format`, `bun run typecheck`, `bun run lint`, and `bun run test` — all must pass; never push if any check fails.
 - When committing from mixed WIP, stage and push only files related to the current change; exclude unrelated work-in-progress.
 - When directed to continue through the plan, loop autonomously through phases until MVP exit gates pass without pausing between phases for approval.
