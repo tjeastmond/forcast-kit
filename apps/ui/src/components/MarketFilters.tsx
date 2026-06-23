@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { MultiSelectFilter } from '@/components/MultiSelectFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FILTER_ROW_CLASS } from '@/lib/filterControls';
+import { FILTER_ROW_CLASS, buildFilterItems } from '@/lib/filterControls';
 import { type MarketFilterState } from '@/lib/marketFilters';
 import { cn } from '@/lib/utils';
 
@@ -72,7 +72,7 @@ export function MarketFilters({
       </div>
       <div className={FILTER_ROW_CLASS}>
         <MultiSelectFilter
-          items={FOCUS_VALUES.map((focus) => ({ value: focus, label: focus }))}
+          items={buildFilterItems(FOCUS_VALUES, { sort: true })}
           selected={filters.focus}
           onSelectedChange={(focus) => {
             onFiltersChange({ ...filters, focus });
@@ -113,7 +113,7 @@ export function MarketFilters({
           pluralNoun="tags"
         />
         <MultiSelectFilter
-          items={STATUS_OPTIONS.map((status) => ({ value: status, label: status }))}
+          items={buildFilterItems(STATUS_OPTIONS)}
           selected={filters.status}
           onSelectedChange={(status) => {
             onFiltersChange({ ...filters, status });

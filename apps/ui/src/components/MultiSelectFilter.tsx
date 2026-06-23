@@ -2,8 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { FILTER_TRIGGER_BUTTON_CLASS } from '@/lib/filterControls';
-import { toggleSetSelection } from '@/lib/filterControls';
+import { FILTER_DROPDOWN_PANEL_CLASS, FILTER_TRIGGER_BUTTON_CLASS, toggleSetSelection } from '@/lib/filterControls';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, ListFilterIcon } from 'lucide-react';
 
@@ -66,7 +65,7 @@ export function MultiSelectFilter<T extends string>({
               setOpen(false);
             }}
           />
-          <div className="bg-popover absolute top-full z-50 mt-1 w-full rounded-lg border p-2 shadow-lg">
+          <div className={FILTER_DROPDOWN_PANEL_CLASS}>
             {items.map((item) => (
               <label
                 key={item.value}
