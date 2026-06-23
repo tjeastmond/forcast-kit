@@ -390,3 +390,4 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 - Repo bootstrapped at `/Users/tjeastmond/Projects/forcast-kit` with `Project_Plan.md` copied from sibling `forcastkit.dev`.
 - GitHub Actions CI (`.github/workflows/ci.yml`) runs `typecheck`, `lint`, and `test` on push/PR to `main`.
+- Post-MVP polish gaps and pick-up order live in `.ai/handoff-remaining.md`; track bugs in `.ai/issues.md`.
