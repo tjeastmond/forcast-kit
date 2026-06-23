@@ -346,6 +346,7 @@ Do **not** import `@forcast-kit/db` main entry in Vitest-only test files if you 
 - **TypeScript:** Strict; use exhaustive switches with `never` default; no inline imports.
 - **Issues:** Log bugs in `.ai/issues.md` (create if missing).
 - **Scope:** Minimize diffs; match existing patterns; don't over-engineer.
+- **Explorer UI copy:** Headings, buttons, form labels, and icon `aria-label`s use Title Case (see `.cursor/rules/ui-title-case.mdc`, `apps/ui/AGENTS.md`).
 
 ### Versioning
 
@@ -392,9 +393,11 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 - Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **patch** release (`0.5.x`) when appropriate — do not bump minor/major without explicit user approval.
 - Before every **commit or push**, run `bun run format`, `bun run typecheck`, `bun run lint`, and `bun run test` — all must pass; never push if any check fails.
+- When committing from mixed WIP, stage and push only files related to the current change; exclude unrelated work-in-progress.
 - When directed to continue through the plan, loop autonomously through phases until MVP exit gates pass without pausing between phases for approval.
 - Initial commits should document what changed (via CHANGELOG `[Unreleased]` entries and conventional commit messages).
 - Version line stays at **0.5.x** (patch) until the user requests a minor (`0.6.0`) or major (`1.0.0`) bump.
+- Mirror **applied.dev** visual/UX patterns (card lists, filters, detail sheets) when building or extending `apps/ui`.
 
 ---
 
@@ -402,4 +405,5 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 - Repo bootstrapped at `/Users/tjeastmond/Projects/forcast-kit` with `Project_Plan.md` copied from sibling `forcastkit.dev`.
 - GitHub Actions CI (`.github/workflows/ci.yml`) runs `typecheck`, `lint`, and `test` on push/PR to `main`.
-- Post-MVP polish gaps and pick-up order live in `.ai/handoff-remaining.md`; track bugs in `.ai/issues.md`.
+- Post-MVP polish is complete; `.ai/handoff-remaining.md` lists done items and explicit out-of-scope work; track bugs in `.ai/issues.md`.
+- Sibling design reference **applied.dev** lives at `/Users/tjeastmond/Projects/applied.dev` (Next.js 15, shadcn, card-based list UI).
