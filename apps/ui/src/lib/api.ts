@@ -186,6 +186,8 @@ export async function fetchMarketExport(ticker: string): Promise<MarketExportV1>
 export async function fetchEvents(options: {
   focus?: string;
   exclude?: string;
+  status?: string;
+  stale?: boolean;
   q?: string;
   limit?: number;
   cursor?: string;
@@ -195,6 +197,8 @@ export async function fetchEvents(options: {
     `/events${buildQuery({
       focus: options.focus,
       exclude: options.exclude,
+      status: options.status,
+      stale: options.stale === undefined ? undefined : String(options.stale),
       q: options.q,
       limit: options.limit?.toString(),
       cursor: options.cursor,

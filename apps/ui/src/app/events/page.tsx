@@ -1,59 +1,143 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/AppShell';
 import { EventCard } from '@/components/EventCard';
-import { Input } from '@/components/ui/input';
+import {
+  MarketFilters,
+  emptyMarketFilters,
+  filtersToQueryParams,
+  hasActiveMarketFilters,
+  type MarketFilterState,
+} from '@/components/MarketFilters';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { fetchEvents, type EventRow } from '@/lib/api';
 
-export default function EventsPage() {
-  const [events, setEvents] = useState<readonly EventRow[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+const PAGE_SIZES = [5, 10, 20, 50] as const;
 
-  const loadEvents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await fetchEvents({
-        ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
-        includeMarkets: true,
-        limit: 50,
-      });
-      setEvents(result.events);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load events');
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery]);
+export default function EventsPage() {
+  const [filters, setFilters] = useState<MarketFilterState>(emptyMarketFilters);
+  const [events, setEvents] = useState<readonly EventRow[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [loading, setLoading] = useState(true);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const cursorStack = useRef<(string | null)[]>([null]);
+
+  const loadEvents = useCallback(
+    async (options?: { cursor?: string | null; resetStack?: boolean }) => {
+      setLoading(true);
+      try {
+        const result = await fetchEvents({
+          ...filtersToQueryParams(filters),
+          includeMarkets: true,
+          limit: pageSize,
+          ...(options?.cursor ? { cursor: options.cursor } : {}),
+        });
+        setEvents(result.events);
+        setNextCursor(result.cursor);
+        if (options?.resetStack) {
+          cursorStack.current = [null];
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to load events');
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters, pageSize],
+  );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      void loadEvents();
+      void loadEvents({ resetStack: true });
     }, 250);
     return () => {
       window.clearTimeout(timeout);
     };
   }, [loadEvents]);
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (event.key === 'Escape') {
+        setFilters(emptyMarketFilters());
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   return (
-    <AppShell>
-      <div className="mb-4">
-        <Input
-          type="search"
-          value={searchQuery}
-          onChange={(event) => {
-            setSearchQuery(event.target.value);
-          }}
-          placeholder="Search events…"
-        />
+    <AppShell
+      onTitleClick={() => {
+        setFilters(emptyMarketFilters());
+      }}
+    >
+      <MarketFilters
+        variant="events"
+        filters={filters}
+        onFiltersChange={setFilters}
+        onClear={() => {
+          setFilters(emptyMarketFilters());
+        }}
+        hasActiveFilters={hasActiveMarketFilters(filters)}
+        searchInputRef={searchInputRef}
+      />
+
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <p className="text-muted-foreground text-sm">{loading ? 'Loading…' : `${String(events.length)} events`}</p>
+        <div className="flex items-center gap-2">
+          <select
+            className="border-input h-8 rounded-lg border px-2 text-sm"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number.parseInt(event.target.value, 10));
+            }}
+          >
+            {PAGE_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size} / page
+              </option>
+            ))}
+          </select>
+          <Button
+            variant="outline"
+            disabled={cursorStack.current.length <= 1}
+            onClick={() => {
+              cursorStack.current.pop();
+              const previous = cursorStack.current[cursorStack.current.length - 1] ?? null;
+              void loadEvents({ ...(previous !== null ? { cursor: previous } : {}) });
+            }}
+          >
+            Prev
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!nextCursor}
+            onClick={() => {
+              if (nextCursor) {
+                cursorStack.current.push(nextCursor);
+                void loadEvents({ cursor: nextCursor });
+              }
+            }}
+          >
+            Next
+          </Button>
+        </div>
       </div>
+
       <div className="space-y-4">
         {loading
-          ? [1, 2, 3].map((key) => <Card key={key} className="h-20 animate-pulse" />)
+          ? [1, 2, 3].map((key) => <Card key={key} className="h-24 animate-pulse" />)
           : events.map((event) => (
               <EventCard
                 key={event.eventTicker}

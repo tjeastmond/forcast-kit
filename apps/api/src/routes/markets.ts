@@ -96,6 +96,8 @@ export const eventRoutes: FastifyPluginCallback = (app, _opts, done) => {
     return app.query.events.listEvents({
       ...(marketQuery.focus.length > 0 ? { focus: marketQuery.focus } : {}),
       ...(marketQuery.exclude.length > 0 ? { exclude: marketQuery.exclude } : {}),
+      ...(marketQuery.status !== undefined ? { status: marketQuery.status } : {}),
+      ...(marketQuery.stale !== undefined ? { stale: marketQuery.stale } : {}),
       ...(marketQuery.q !== undefined ? { q: marketQuery.q } : {}),
       ...(marketQuery.limit !== undefined ? { limit: marketQuery.limit } : {}),
       ...(marketQuery.cursor !== undefined ? { cursor: marketQuery.cursor } : {}),

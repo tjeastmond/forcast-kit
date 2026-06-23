@@ -99,8 +99,17 @@ async function loadFocusTagsForMarkets(
 export class MarketQueryService {
   constructor(private readonly _db: DatabaseClient) {}
 
-  async getEventTickersMatchingFilter(options: Pick<MarketListOptions, 'focus' | 'exclude'>): Promise<string[]> {
+  async getEventTickersMatchingFilter(
+    options: Pick<MarketListOptions, 'focus' | 'exclude' | 'status' | 'stale'>,
+  ): Promise<string[]> {
     const whereParts = [];
+
+    if (options.status) {
+      whereParts.push(eq(markets.status, options.status));
+    }
+    if (options.stale !== undefined) {
+      whereParts.push(eq(markets.isStale, options.stale));
+    }
 
     if (options.focus && options.focus.length > 0) {
       whereParts.push(
@@ -241,6 +250,8 @@ export class MarketQueryService {
 export interface EventListOptions {
   readonly focus?: readonly Focus[];
   readonly exclude?: readonly Focus[];
+  readonly status?: string;
+  readonly stale?: boolean;
   readonly q?: string;
   readonly limit?: number;
   readonly cursor?: string;
@@ -266,11 +277,13 @@ export class EventQueryService {
       }
     }
 
-    if (options.focus?.length || options.exclude?.length) {
+    if (options.focus?.length || options.exclude?.length || options.status || options.stale !== undefined) {
       const marketQuery = new MarketQueryService(this._db);
       const eventTickers = await marketQuery.getEventTickersMatchingFilter({
         ...(options.focus !== undefined ? { focus: options.focus } : {}),
         ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
+        ...(options.status !== undefined ? { status: options.status } : {}),
+        ...(options.stale !== undefined ? { stale: options.stale } : {}),
       });
       if (eventTickers.length === 0) {
         return { events: [], cursor: null };
@@ -299,6 +312,8 @@ export class EventQueryService {
           eventTicker: event.eventTicker,
           ...(options.focus !== undefined ? { focus: options.focus } : {}),
           ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
+          ...(options.status !== undefined ? { status: options.status } : {}),
+          ...(options.stale !== undefined ? { stale: options.stale } : {}),
           limit: MAX_LIMIT,
         });
         entry['markets'] = eventMarkets;

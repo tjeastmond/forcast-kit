@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 
 export function EventCard({ event, marketCount }: { event: EventRow; marketCount?: number }) {
   return (
-    <Link href={`/events/${encodeURIComponent(event.eventTicker)}`}>
-      <Card className={cn('transition-colors hover:bg-muted/50 dark:hover:bg-secondary hover:shadow-md')}>
-        <CardHeader>
+    <Link href={`/events/${encodeURIComponent(event.eventTicker)}`} className="block">
+      <Card className={cn('gap-0 py-0 transition-colors', 'hover:bg-muted/50 dark:hover:bg-secondary hover:shadow-md')}>
+        <CardHeader className="space-y-1 py-4">
           <CardTitle>{event.title}</CardTitle>
           <p className="text-muted-foreground text-sm">
             {event.eventTicker}

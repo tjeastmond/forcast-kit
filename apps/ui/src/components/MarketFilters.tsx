@@ -24,15 +24,20 @@ export function MarketFilters({
   onClear,
   hasActiveFilters,
   searchInputRef,
+  variant = 'markets',
 }: {
   filters: MarketFilterState;
   onFiltersChange: (next: MarketFilterState) => void;
   onClear: () => void;
   hasActiveFilters: boolean;
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
+  variant?: 'markets' | 'events';
 }) {
+  const searchPlaceholder = variant === 'events' ? 'Search events…' : 'Search markets…';
+  const searchAriaLabel = variant === 'events' ? 'Search events' : 'Search markets';
+
   return (
-    <div className="space-y-2">
+    <div className="mb-6 space-y-2">
       <div className="relative">
         <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
         <Input
@@ -42,9 +47,9 @@ export function MarketFilters({
           onChange={(event) => {
             onFiltersChange({ ...filters, searchQuery: event.target.value });
           }}
-          placeholder="Search markets…"
+          placeholder={searchPlaceholder}
           className="pl-8"
-          aria-label="Search markets"
+          aria-label={searchAriaLabel}
         />
       </div>
       <div className={FILTER_ROW_CLASS}>

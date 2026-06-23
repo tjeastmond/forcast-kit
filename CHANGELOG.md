@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Events list uses full explorer filters (focus, status, stale) and cursor pagination; `/markets` redirects to `/events` and the markets nav tab is removed
+- Explorer shell content width increased 25% (`60rem`)
 - Explorer default route and nav prioritize `/events`; event detail shows market cards instead of comparison table
 - `bun run ui` now starts the API server and explorer UI together; use `bun run ui:app` for UI only
 - UI defaults to same-origin `/api` proxy (avoids CORS); API CORS preflight fixed via `@fastify/cors`
