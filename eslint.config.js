@@ -29,6 +29,9 @@ export default tseslint.config(
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
+      '**/.next/**',
+      'apps/ui/postcss.config.mjs',
+      'apps/ui/next-env.d.ts',
       '**/migrations/**',
       'eslint.config.js',
       'prettier.config.js',

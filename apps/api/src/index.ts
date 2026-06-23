@@ -10,8 +10,10 @@ import {
 import { KalshiProvider } from '@forcast-kit/provider-kalshi';
 import { PolymarketProvider } from '@forcast-kit/provider-polymarket';
 import Fastify from 'fastify';
+import { adminRoutes } from './routes/admin.js';
 import { eventRoutes, marketRoutes, syncRoutes } from './routes/markets.js';
 import { healthRoutes } from './routes/health.js';
+import { corsPlugin } from './plugins/cors.js';
 
 export async function buildApp(options?: { db?: DatabaseClient }) {
   const config = loadConfig();
@@ -26,15 +28,18 @@ export async function buildApp(options?: { db?: DatabaseClient }) {
 
   app.decorate('config', config);
   app.decorate('db', db);
+  app.decorate('repos', repos);
   app.decorate('query', query);
   app.decorate('sync', sync);
   app.decorate('providers', providers);
   app.decorate('kalshiProvider', kalshiProvider);
 
+  await app.register(corsPlugin);
   await app.register(healthRoutes);
   await app.register(marketRoutes);
   await app.register(eventRoutes);
   await app.register(syncRoutes);
+  await app.register(adminRoutes);
 
   return app;
 }
@@ -65,6 +70,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     config: ReturnType<typeof loadConfig>;
     db: ReturnType<typeof createDatabase>;
+    repos: ReturnType<typeof createRepositories>;
     query: ReturnType<typeof createQueryServices>;
     sync: ReturnType<typeof createSyncService>;
     providers: ReturnType<typeof createProviderRegistry>;

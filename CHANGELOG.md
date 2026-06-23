@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI `events` command to list events and show event detail with filtered markets
 - CLI sync resolves providers via `ProviderRegistry` (same pattern as API)
 - CLI argument-parsing tests and API/CLI list parity integration test
+- `apps/ui` local explorer: lean market/event cards, detail sheet, event comparison table, focused admin edits, sync dialog
+- API admin routes (`PATCH /admin/markets/:ticker`, `PUT /admin/markets/:ticker/focus-tags`), stale filter, `GET /sync` list, CORS for UI dev
 
 ### Fixed
 

@@ -33,11 +33,11 @@ SyncService (upsert + focus tagging + sync_runs audit)
       ↓
 SQLite (Drizzle) — ./data/forcast-kit.db
       ↓
-┌─────────────┬──────────────┐
-│  Fastify    │  Ink CLI     │
-│  /markets   │  sync, list  │
-│  /events    │  inspect     │
-└─────────────┴──────────────┘
+┌─────────────┬──────────────┬──────────────┐
+│  Fastify    │  Ink CLI     │  Next.js UI  │
+│  /markets   │  sync, list  │  :3848       │
+│  /events    │  inspect     │  cards/sheet │
+└─────────────┴──────────────┴──────────────┘
 ```
 
 **Rule:** Downstream code consumes **normalized** types from `@forcast-kit/core`, never raw Kalshi JSON (except `raw_json` columns for forward compatibility).
@@ -45,7 +45,8 @@ SQLite (Drizzle) — ./data/forcast-kit.db
 ### Package dependency flow
 
 ```txt
-apps/cli, apps/api  →  db, providers/*  →  core
+apps/cli, apps/api, apps/ui  →  db (api only), providers/*  →  core
+apps/ui                     →  HTTP to apps/api only
 providers/kalshi    →  core
 providers/polymarket → core (fetch stub; registered in API)
 core/providers     → registry for kalshi + polymarket
@@ -142,6 +143,8 @@ Run all commands from the repo root with **Bun**.
 | ------------- | ---------------------------------------------------- | ---------------------------------------- |
 | `dev`         | `bun run apps/cli/src/index.tsx`                     | Run CLI interactively (Ink UI)           |
 | `serve`       | `bun run apps/api/src/index.ts`                      | Start Fastify API on `127.0.0.1:3847`    |
+| `ui`          | `bun run --filter @forcast-kit/ui dev`               | Local explorer UI on `127.0.0.1:3848`    |
+| `dev:explore` | `bun run serve & bun run ui`                         | API + UI together                        |
 | `sync:kalshi` | `bun run apps/cli/src/index.tsx sync kalshi --no-ui` | Non-interactive Kalshi sync              |
 | `db:generate` | `drizzle-kit generate`                               | Generate migration from schema changes   |
 | `db:migrate`  | `drizzle-kit migrate`                                | Apply migrations (uses `better-sqlite3`) |
@@ -207,16 +210,19 @@ Use `--no-ui` for scripts and CI. Interactive sync uses Ink (`SyncApp.tsx`). CLI
 
 Base URL: `http://127.0.0.1:3847`
 
-| Method | Path                      | Notes                                                                  |
-| ------ | ------------------------- | ---------------------------------------------------------------------- |
-| `GET`  | `/health`                 | `{ status, db }`                                                       |
-| `GET`  | `/markets`                | Query: `focus`, `exclude`, `status`, `q`, `limit`, `cursor`            |
-| `GET`  | `/markets/:ticker`        | Full detail: sides, focus tags, event, `raw_json`                      |
-| `GET`  | `/markets/:ticker/export` | Agent export JSON schema v1.0 (spread, mid, implied prob)              |
-| `GET`  | `/events`                 | Same filters; `?includeMarkets=true`                                   |
-| `GET`  | `/events/:eventTicker`    | Event + filtered markets                                               |
-| `POST` | `/sync`                   | Body: `{ provider, focus, exclude, maxPages, full }` → background sync |
-| `GET`  | `/sync/:id`               | Sync run status and counts                                             |
+| Method  | Path                                | Notes                                                                  |
+| ------- | ----------------------------------- | ---------------------------------------------------------------------- |
+| `GET`   | `/health`                           | `{ status, db }`                                                       |
+| `GET`   | `/markets`                          | Query: `focus`, `exclude`, `status`, `stale`, `q`, `limit`, `cursor`   |
+| `GET`   | `/markets/:ticker`                  | Full detail; `?includeMetrics=true` adds spread/mid/implied            |
+| `GET`   | `/markets/:ticker/export`           | Agent export JSON schema v1.0 (spread, mid, implied prob)              |
+| `GET`   | `/events`                           | Same filters; `?includeMarkets=true`                                   |
+| `GET`   | `/events/:eventTicker`              | Event + markets; `?includeMetrics=true` for comparison columns         |
+| `POST`  | `/sync`                             | Body: `{ provider, focus, exclude, maxPages, full }` → background sync |
+| `GET`   | `/sync`                             | Paginated sync run list                                                |
+| `GET`   | `/sync/:id`                         | Sync run status and counts                                             |
+| `PATCH` | `/admin/markets/:ticker`            | Focused manual edits (local dev only)                                  |
+| `PUT`   | `/admin/markets/:ticker/focus-tags` | Replace focus tags                                                     |
 
 List endpoints paginate with opaque base64url cursors (market/event id).
 
@@ -375,6 +381,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 | List/filter queries  | `packages/db/src/query/index.ts`                                    |
 | API routes           | `apps/api/src/routes/markets.ts`                                    |
 | CLI commands         | `apps/cli/src/commands/`                                            |
+| Explorer UI          | `apps/ui/` (see `apps/ui/AGENTS.md`)                                |
 | Agent export         | `packages/db/src/export/index.ts`, `apps/api/src/routes/markets.ts` |
 | Provider registry    | `packages/core/src/providers/registry.ts`                           |
 

@@ -120,6 +120,49 @@ export class MarketRepository {
       .set({ isStale: true, updatedAt: now })
       .where(and(eq(markets.provider, provider), notInArray(markets.id, seenIds)));
   }
+
+  async updatePartial(
+    ticker: string,
+    fields: {
+      title?: string;
+      subtitle?: string;
+      status?: string;
+      yesBid?: number | null;
+      yesAsk?: number | null;
+      noBid?: number | null;
+      noAsk?: number | null;
+      lastPrice?: number | null;
+      isStale?: boolean;
+    },
+  ): Promise<number | null> {
+    const [existing] = await this._db
+      .select({ id: markets.id })
+      .from(markets)
+      .where(eq(markets.ticker, ticker))
+      .limit(1);
+    if (!existing) {
+      return null;
+    }
+
+    const now = isoNow();
+    await this._db
+      .update(markets)
+      .set({
+        ...(fields.title !== undefined ? { title: fields.title } : {}),
+        ...(fields.subtitle !== undefined ? { subtitle: fields.subtitle } : {}),
+        ...(fields.status !== undefined ? { status: fields.status } : {}),
+        ...(fields.yesBid !== undefined ? { yesBid: fields.yesBid } : {}),
+        ...(fields.yesAsk !== undefined ? { yesAsk: fields.yesAsk } : {}),
+        ...(fields.noBid !== undefined ? { noBid: fields.noBid } : {}),
+        ...(fields.noAsk !== undefined ? { noAsk: fields.noAsk } : {}),
+        ...(fields.lastPrice !== undefined ? { lastPrice: fields.lastPrice } : {}),
+        ...(fields.isStale !== undefined ? { isStale: fields.isStale } : {}),
+        updatedAt: now,
+      })
+      .where(eq(markets.id, existing.id));
+
+    return existing.id;
+  }
 }
 
 export class MarketSideRepository {

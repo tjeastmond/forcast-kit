@@ -1,13 +1,17 @@
 import type { Focus } from '@forcast-kit/core';
-import { and, asc, eq, gt, inArray, like, notInArray, or } from 'drizzle-orm';
+import { deriveMarketMetrics } from '@forcast-kit/core';
+import { and, asc, desc, eq, gt, inArray, like, lt, notInArray, or } from 'drizzle-orm';
 import type { DatabaseClient } from '../database-client.js';
 import { events, marketFocusTags, marketSides, markets, syncRuns } from '../schema/index.js';
 import type { MarketRow, SyncRunRow } from '../schema/index.js';
+
+export type { SyncRunRow };
 
 export interface MarketListOptions {
   readonly focus?: readonly Focus[];
   readonly exclude?: readonly Focus[];
   readonly status?: string;
+  readonly stale?: boolean;
   readonly q?: string;
   readonly eventTicker?: string;
   readonly limit?: number;
@@ -17,6 +21,7 @@ export interface MarketListOptions {
 export interface MarketSummary {
   readonly id: number;
   readonly ticker: string;
+  readonly eventTicker: string;
   readonly title: string;
   readonly status: string;
   readonly closeTime: string;
@@ -24,6 +29,18 @@ export interface MarketSummary {
   readonly focusTags: readonly Focus[];
   readonly volume: number;
   readonly lastPrice: number | null;
+  readonly isStale: boolean;
+}
+
+export interface MarketComparisonRow extends MarketSummary {
+  readonly volume24h: number;
+  readonly liquidity: number;
+  readonly openInterest: number;
+  readonly yesBid: number | null;
+  readonly yesAsk: number | null;
+  readonly spread: number | null;
+  readonly midPrice: number | null;
+  readonly impliedProbability: number | null;
 }
 
 export interface MarketListResult {
@@ -123,6 +140,9 @@ export class MarketQueryService {
     if (options.status) {
       whereParts.push(eq(markets.status, options.status));
     }
+    if (options.stale !== undefined) {
+      whereParts.push(eq(markets.isStale, options.stale));
+    }
     if (options.eventTicker) {
       whereParts.push(eq(markets.eventTicker, options.eventTicker));
     }
@@ -178,6 +198,7 @@ export class MarketQueryService {
     const summaries: MarketSummary[] = pageRows.map((row) => ({
       id: row.id,
       ticker: row.ticker,
+      eventTicker: row.eventTicker,
       title: row.title,
       status: row.status,
       closeTime: row.closeTime,
@@ -185,6 +206,7 @@ export class MarketQueryService {
       focusTags: tagMap.get(row.id) ?? [],
       volume: row.volume,
       lastPrice: row.lastPrice,
+      isStale: row.isStale,
     }));
 
     const lastRow = pageRows[pageRows.length - 1];
@@ -289,7 +311,10 @@ export class EventQueryService {
     return { events: result, cursor: nextCursor };
   }
 
-  async getEventByTicker(eventTicker: string, options: { focus?: Focus[]; exclude?: Focus[] } = {}) {
+  async getEventByTicker(
+    eventTicker: string,
+    options: { focus?: Focus[]; exclude?: Focus[]; includeMetrics?: boolean } = {},
+  ) {
     const [event] = await this._db.select().from(events).where(eq(events.eventTicker, eventTicker)).limit(1);
     if (!event) {
       return null;
@@ -303,11 +328,65 @@ export class EventQueryService {
       limit: MAX_LIMIT,
     });
 
+    if (!options.includeMetrics) {
+      return {
+        ...event,
+        markets: eventMarkets,
+      };
+    }
+
+    const tickers = eventMarkets.map((market) => market.ticker);
+    if (tickers.length === 0) {
+      return {
+        ...event,
+        markets: [] as MarketComparisonRow[],
+      };
+    }
+
+    const rows = await this._db.select().from(markets).where(inArray(markets.ticker, tickers));
+    const rowByTicker = new Map(rows.map((row) => [row.ticker, row]));
+    const comparisonMarkets: MarketComparisonRow[] = eventMarkets.flatMap((summary) => {
+      const row = rowByTicker.get(summary.ticker);
+      if (!row) {
+        return [];
+      }
+      const metrics = deriveMarketMetrics({
+        yesBid: row.yesBid,
+        yesAsk: row.yesAsk,
+        noBid: row.noBid,
+        noAsk: row.noAsk,
+        lastPrice: row.lastPrice,
+      });
+      return [
+        {
+          ...summary,
+          volume24h: row.volume24h,
+          liquidity: row.liquidity,
+          openInterest: row.openInterest,
+          yesBid: row.yesBid,
+          yesAsk: row.yesAsk,
+          spread: metrics.spread,
+          midPrice: metrics.midPrice,
+          impliedProbability: metrics.impliedProbability,
+        },
+      ];
+    });
+
     return {
       ...event,
-      markets: eventMarkets,
+      markets: comparisonMarkets,
     };
   }
+}
+
+export interface SyncRunListOptions {
+  readonly limit?: number;
+  readonly cursor?: string;
+}
+
+export interface SyncRunListResult {
+  readonly syncRuns: readonly SyncRunRow[];
+  readonly cursor: string | null;
 }
 
 export class SyncRunQueryService {
@@ -316,6 +395,34 @@ export class SyncRunQueryService {
   async getById(id: number): Promise<SyncRunRow | null> {
     const [row] = await this._db.select().from(syncRuns).where(eq(syncRuns.id, id)).limit(1);
     return row ?? null;
+  }
+
+  async listRuns(options: SyncRunListOptions = {}): Promise<SyncRunListResult> {
+    const limit = clampLimit(options.limit);
+    const whereParts = [];
+
+    if (options.cursor) {
+      const cursorId = decodeCursor(options.cursor);
+      if (cursorId !== null) {
+        whereParts.push(lt(syncRuns.id, cursorId));
+      }
+    }
+
+    const whereClause = whereParts.length > 0 ? and(...whereParts) : undefined;
+
+    const rows = await this._db
+      .select()
+      .from(syncRuns)
+      .where(whereClause)
+      .orderBy(desc(syncRuns.id))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    const lastRow = pageRows[pageRows.length - 1];
+    const nextCursor = hasMore && lastRow ? encodeCursor(lastRow.id) : null;
+
+    return { syncRuns: pageRows, cursor: nextCursor };
   }
 }
 

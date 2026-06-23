@@ -1,5 +1,5 @@
 import type { Focus, ProviderId } from '@forcast-kit/core';
-import { parseFocusList } from '@forcast-kit/core';
+import { deriveMarketMetrics, parseFocusList } from '@forcast-kit/core';
 import { marketDetailToExport } from '@forcast-kit/db/export';
 import type { FastifyPluginCallback } from 'fastify';
 
@@ -11,14 +11,26 @@ function parseLimit(value: string | undefined): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function parseBoolean(value: unknown): boolean | undefined {
+  if (value === 'true' || value === true) {
+    return true;
+  }
+  if (value === 'false' || value === false) {
+    return false;
+  }
+  return undefined;
+}
+
 function parseMarketQuery(query: Record<string, unknown>) {
   return {
     focus: parseFocusList(typeof query['focus'] === 'string' ? query['focus'] : undefined),
     exclude: parseFocusList(typeof query['exclude'] === 'string' ? query['exclude'] : undefined),
     status: typeof query['status'] === 'string' ? query['status'] : undefined,
+    stale: parseBoolean(query['stale']),
     q: typeof query['q'] === 'string' ? query['q'] : undefined,
     limit: parseLimit(typeof query['limit'] === 'string' ? query['limit'] : undefined),
     cursor: typeof query['cursor'] === 'string' ? query['cursor'] : undefined,
+    includeMetrics: parseBoolean(query['includeMetrics']) === true,
   };
 }
 
@@ -29,6 +41,7 @@ export const marketRoutes: FastifyPluginCallback = (app, _opts, done) => {
       ...(query.focus.length > 0 ? { focus: query.focus } : {}),
       ...(query.exclude.length > 0 ? { exclude: query.exclude } : {}),
       ...(query.status !== undefined ? { status: query.status } : {}),
+      ...(query.stale !== undefined ? { stale: query.stale } : {}),
       ...(query.q !== undefined ? { q: query.q } : {}),
       ...(query.limit !== undefined ? { limit: query.limit } : {}),
       ...(query.cursor !== undefined ? { cursor: query.cursor } : {}),
@@ -38,12 +51,26 @@ export const marketRoutes: FastifyPluginCallback = (app, _opts, done) => {
 
   app.get('/markets/:ticker', async (request, reply) => {
     const { ticker } = request.params as { ticker: string };
+    const query = parseMarketQuery(request.query as Record<string, unknown>);
     const market = await app.query.markets.getMarketByTicker(ticker);
     if (!market) {
       reply.code(404);
       return { error: 'Market not found' };
     }
-    return market;
+
+    if (!query.includeMetrics) {
+      return market;
+    }
+
+    const metrics = deriveMarketMetrics({
+      yesBid: market.yesBid,
+      yesAsk: market.yesAsk,
+      noBid: market.noBid,
+      noAsk: market.noAsk,
+      lastPrice: market.lastPrice,
+    });
+
+    return { ...market, metrics };
   });
 
   app.get('/markets/:ticker/export', async (request, reply) => {
@@ -82,6 +109,7 @@ export const eventRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const event = await app.query.events.getEventByTicker(eventTicker, {
       ...(query.focus.length > 0 ? { focus: query.focus } : {}),
       ...(query.exclude.length > 0 ? { exclude: query.exclude } : {}),
+      ...(query.includeMetrics ? { includeMetrics: true } : {}),
     });
     if (!event) {
       reply.code(404);
@@ -115,6 +143,17 @@ export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
     });
 
     return { syncRunId, status: 'running' };
+  });
+
+  app.get('/sync', async (request) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = parseLimit(typeof query['limit'] === 'string' ? query['limit'] : undefined);
+    const cursor = typeof query['cursor'] === 'string' ? query['cursor'] : undefined;
+
+    return app.query.syncRuns.listRuns({
+      ...(limit !== undefined ? { limit } : {}),
+      ...(cursor !== undefined ? { cursor } : {}),
+    });
   });
 
   app.get('/sync/:id', async (request, reply) => {
