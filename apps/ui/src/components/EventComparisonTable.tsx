@@ -2,6 +2,7 @@
 
 import type { MarketComparisonRow } from '@/lib/api';
 import { formatDate, formatNumber, formatPrice, formatSpread, marketDisplayTitle } from '@/lib/format';
+import { sortMarketsByPayoutLikelihood } from '@/lib/sort-markets';
 
 export function EventComparisonTable({
   markets,
@@ -12,7 +13,7 @@ export function EventComparisonTable({
   maxImplied: number;
   onSelectMarket: (ticker: string) => void;
 }) {
-  const sorted = [...markets].sort((a, b) => (b.impliedProbability ?? 0) - (a.impliedProbability ?? 0));
+  const sorted = sortMarketsByPayoutLikelihood(markets);
 
   return (
     <div className="overflow-x-auto">

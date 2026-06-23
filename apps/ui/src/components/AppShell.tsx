@@ -8,15 +8,7 @@ import { SyncAdminButton } from '@/components/SyncAdminDialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export function AppShell({
-  children,
-  hasUnsavedEdits = false,
-  onTitleClick,
-}: {
-  children: ReactNode;
-  hasUnsavedEdits?: boolean;
-  onTitleClick?: () => void;
-}) {
+export function AppShell({ children, onTitleClick }: { children: ReactNode; onTitleClick?: () => void }) {
   const { toggleTheme } = useTheme();
 
   const title = onTitleClick ? (
@@ -46,7 +38,7 @@ export function AppShell({
               <MoonIcon className="size-4 dark:hidden" />
               <SunIcon className="hidden size-4 dark:block" />
             </Button>
-            <SyncAdminButton hasUnsavedEdits={hasUnsavedEdits} />
+            <SyncAdminButton />
           </div>
         </div>
       </header>

@@ -1,12 +1,23 @@
 'use client';
 
+import { memo } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import type { MarketSummary } from '@/lib/api';
 import { formatDate, formatPrice, marketDisplayTitle } from '@/lib/format';
+import { resolveImpliedProbability, resolveNoImpliedProbability, type MarketPayoutSortInput } from '@/lib/sort-markets';
 import { cn } from '@/lib/utils';
 
-export function MarketCard({ market, onOpen }: { market: MarketSummary; onOpen: (ticker: string) => void }) {
+export const MarketCard = memo(function MarketCard({
+  market,
+  onOpen,
+}: {
+  market: MarketSummary & MarketPayoutSortInput;
+  onOpen: (ticker: string) => void;
+}) {
   const displayTitle = marketDisplayTitle(market);
+  const yesPct = resolveImpliedProbability(market);
+  const noPct = resolveNoImpliedProbability(market);
+  const hasPricing = yesPct !== null || noPct !== null;
 
   return (
     <Card
@@ -40,7 +51,22 @@ export function MarketCard({ market, onOpen }: { market: MarketSummary; onOpen: 
             <span className="text-muted-foreground ml-2 text-xs uppercase">kalshi</span>
           </p>
         </div>
+        {hasPricing ? (
+          <p className="shrink-0 text-right text-sm tabular-nums">
+            {yesPct !== null ? (
+              <>
+                <span className="text-muted-foreground">Yes</span> {formatPrice(yesPct)}
+              </>
+            ) : null}
+            {yesPct !== null && noPct !== null ? <span className="text-muted-foreground"> · </span> : null}
+            {noPct !== null ? (
+              <>
+                <span className="text-muted-foreground">No</span> {formatPrice(noPct)}
+              </>
+            ) : null}
+          </p>
+        ) : null}
       </CardHeader>
     </Card>
   );
-}
+});

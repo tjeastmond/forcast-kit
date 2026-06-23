@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { readThemeFromStorage, THEME_STORAGE_KEY, writeThemeCookie, type Theme } from '@/lib/theme';
+import { applyThemeClass, readThemeFromStorage, writeThemeToStorage, type Theme } from '@/lib/theme';
 
 const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void } | null>(null);
 
@@ -14,13 +14,12 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
       setTheme(stored);
       return;
     }
-    localStorage.setItem(THEME_STORAGE_KEY, initialTheme);
+    writeThemeToStorage(initialTheme);
   }, [initialTheme]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    writeThemeCookie(theme);
+    applyThemeClass(theme);
+    writeThemeToStorage(theme);
   }, [theme]);
 
   return (

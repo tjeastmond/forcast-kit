@@ -6,15 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { fetchSyncRun, startEventSync } from '@/lib/api';
 
-export function EventSyncButton({
-  eventTicker,
-  hasUnsavedEdits,
-  onSynced,
-}: {
-  eventTicker: string;
-  hasUnsavedEdits: boolean;
-  onSynced: () => void;
-}) {
+export function EventSyncButton({ eventTicker, onSynced }: { eventTicker: string; onSynced: () => void }) {
   const [runningId, setRunningId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -46,11 +38,6 @@ export function EventSyncButton({
   }, [runningId, onSynced]);
 
   async function handleSync() {
-    if (hasUnsavedEdits) {
-      toast.error('Save or discard sheet edits before syncing — sync overwrites manual changes.');
-      return;
-    }
-
     try {
       const result = await startEventSync(eventTicker);
       setRunningId(result.syncRunId);

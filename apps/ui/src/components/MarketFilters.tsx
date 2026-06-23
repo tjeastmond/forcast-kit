@@ -9,19 +9,10 @@ import { MultiSelectFilter } from '@/components/MultiSelectFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FILTER_ROW_CLASS } from '@/lib/filterControls';
+import { type MarketFilterState } from '@/lib/marketFilters';
 import { cn } from '@/lib/utils';
 
 const STATUS_OPTIONS = ['open', 'closed', 'settled', 'active', 'unopened'] as const;
-
-export interface MarketFilterState {
-  searchQuery: string;
-  focus: Set<string>;
-  exclude: Set<string>;
-  category: Set<string>;
-  tag: Set<string>;
-  status: Set<string>;
-  staleOnly: boolean;
-}
 
 export function MarketFilters({
   filters,
@@ -90,15 +81,6 @@ export function MarketFilters({
           pluralNoun="focus tags"
         />
         <MultiSelectFilter
-          items={FOCUS_VALUES.map((focus) => ({ value: focus, label: focus }))}
-          selected={filters.exclude}
-          onSelectedChange={(exclude) => {
-            onFiltersChange({ ...filters, exclude });
-          }}
-          emptyLabel="Exclude Focus"
-          pluralNoun="excluded"
-        />
-        <MultiSelectFilter
           items={categoryOptions}
           selected={filters.category}
           onSelectedChange={(category) => {
@@ -106,15 +88,6 @@ export function MarketFilters({
           }}
           emptyLabel="Filter By Category"
           pluralNoun="categories"
-        />
-        <MultiSelectFilter
-          items={tagOptions}
-          selected={filters.tag}
-          onSelectedChange={(tag) => {
-            onFiltersChange({ ...filters, tag });
-          }}
-          emptyLabel="Filter By Tag"
-          pluralNoun="tags"
         />
         <span className={cn(!hasActiveFilters && 'cursor-not-allowed')}>
           <Button
@@ -129,7 +102,16 @@ export function MarketFilters({
           </Button>
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={FILTER_ROW_CLASS}>
+        <MultiSelectFilter
+          items={tagOptions}
+          selected={filters.tag}
+          onSelectedChange={(tag) => {
+            onFiltersChange({ ...filters, tag });
+          }}
+          emptyLabel="Filter By Tag"
+          pluralNoun="tags"
+        />
         <MultiSelectFilter
           items={STATUS_OPTIONS.map((status) => ({ value: status, label: status }))}
           selected={filters.status}
@@ -138,72 +120,10 @@ export function MarketFilters({
           }}
           emptyLabel="Filter By Status"
           pluralNoun="statuses"
-          className="max-w-xs"
         />
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={filters.staleOnly}
-            onChange={(event) => {
-              onFiltersChange({ ...filters, staleOnly: event.target.checked });
-            }}
-          />
-          Stale Only
-        </label>
+        <span aria-hidden="true" className="size-8 shrink-0" />
       </div>
       <hr className="border-border" />
     </div>
   );
 }
-
-function firstSelected(values: Set<string>): string | undefined {
-  for (const value of values) {
-    return value;
-  }
-  return undefined;
-}
-
-export function filtersToQueryParams(filters: MarketFilterState): {
-  focus?: string;
-  exclude?: string;
-  category?: string;
-  tag?: string;
-  status?: string;
-  stale?: boolean;
-  q?: string;
-} {
-  const category = firstSelected(filters.category);
-  const tag = firstSelected(filters.tag);
-
-  return {
-    ...(filters.focus.size > 0 ? { focus: [...filters.focus].join(',') } : {}),
-    ...(filters.exclude.size > 0 ? { exclude: [...filters.exclude].join(',') } : {}),
-    ...(category !== undefined ? { category } : {}),
-    ...(tag !== undefined ? { tag } : {}),
-    ...(filters.status.size === 1 ? { status: [...filters.status][0] } : {}),
-    ...(filters.staleOnly ? { stale: true } : {}),
-    ...(filters.searchQuery.trim() ? { q: filters.searchQuery.trim() } : {}),
-  };
-}
-
-export function hasActiveMarketFilters(filters: MarketFilterState): boolean {
-  return (
-    filters.searchQuery.trim().length > 0 ||
-    filters.focus.size > 0 ||
-    filters.exclude.size > 0 ||
-    filters.category.size > 0 ||
-    filters.tag.size > 0 ||
-    filters.status.size > 0 ||
-    filters.staleOnly
-  );
-}
-
-export const emptyMarketFilters = (): MarketFilterState => ({
-  searchQuery: '',
-  focus: new Set(),
-  exclude: new Set(),
-  category: new Set(),
-  tag: new Set(),
-  status: new Set(),
-  staleOnly: false,
-});

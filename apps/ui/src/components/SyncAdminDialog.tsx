@@ -9,15 +9,7 @@ import { Checkbox, Input, Label } from '@/components/ui/input';
 import { fetchSyncRun, fetchSyncRuns, getApiBaseUrl, startSync, type SyncRunRow } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 
-export function SyncAdminDialog({
-  open,
-  onOpenChange,
-  hasUnsavedEdits,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  hasUnsavedEdits: boolean;
-}) {
+export function SyncAdminDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [focusText, setFocusText] = useState('');
   const [excludeText, setExcludeText] = useState('');
   const [full, setFull] = useState(false);
@@ -62,11 +54,6 @@ export function SyncAdminDialog({
   }, [runningId]);
 
   async function handleSync() {
-    if (hasUnsavedEdits) {
-      toast.error('Save or discard sheet edits before syncing — sync overwrites manual changes.');
-      return;
-    }
-
     const parseFocus = (value: string): Focus[] =>
       value
         .split(',')
@@ -183,7 +170,7 @@ export function SyncAdminDialog({
   );
 }
 
-export function SyncAdminButton({ hasUnsavedEdits }: { hasUnsavedEdits: boolean }) {
+export function SyncAdminButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -198,7 +185,7 @@ export function SyncAdminButton({ hasUnsavedEdits }: { hasUnsavedEdits: boolean 
       >
         <SettingsIcon className="size-4" />
       </Button>
-      <SyncAdminDialog open={open} onOpenChange={setOpen} hasUnsavedEdits={hasUnsavedEdits} />
+      <SyncAdminDialog open={open} onOpenChange={setOpen} />
     </>
   );
 }
