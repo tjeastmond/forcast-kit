@@ -11,7 +11,9 @@ function parseLimitFlag(limitFlag: string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 50;
 }
 
-function formatEventList(events: readonly { eventTicker: string; category: string | null; title: string }[]): string {
+export function formatEventList(
+  events: readonly { eventTicker: string; category: string | null; title: string }[],
+): string {
   if (events.length === 0) {
     return 'No events found.';
   }
@@ -21,6 +23,11 @@ function formatEventList(events: readonly { eventTicker: string; category: strin
   );
 
   return [`EVENT_TICKER             CATEGORY     TITLE`, ...lines].join('\n');
+}
+
+export function parseEventTickersFromListOutput(output: string): string[] {
+  const lines = output.split('\n').slice(1);
+  return lines.map((line) => line.slice(0, 24).trim()).filter((eventTicker) => eventTicker.length > 0);
 }
 
 function formatEventDetail(event: {

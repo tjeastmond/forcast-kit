@@ -10,7 +10,10 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const noUi = args.flags['no-ui'] === true;
 
-  if (noUi || args.command === 'serve' || args.command === 'help' || args.flags.help === true) {
+  const stdoutCommand =
+    args.command === 'list' || args.command === 'events' || args.command === 'event' || args.command === 'inspect';
+
+  if (noUi || stdoutCommand || args.command === 'serve' || args.command === 'help' || args.flags.help === true) {
     const result = await runCommand(args);
     if (result.message) {
       process.stdout.write(`${result.message}\n`);

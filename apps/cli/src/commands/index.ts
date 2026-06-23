@@ -21,6 +21,7 @@ export async function runCommand(args: ParsedArgs): Promise<CommandResult> {
     case 'list':
       return (await import('./list.js')).runListCommand(args);
     case 'events':
+    case 'event':
       return (await import('./events.js')).runEventsCommand(args);
     case 'inspect':
       return (await import('./list.js')).runInspectCommand(args);
