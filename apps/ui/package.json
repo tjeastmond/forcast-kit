@@ -4,12 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3848",
+    "clean": "rm -rf .next",
+    "dev": "bun run clean && next dev --port 3848",
     "build": "next build",
     "start": "next start --port 3848",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@forecast-kit/core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
