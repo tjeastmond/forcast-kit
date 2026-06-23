@@ -71,6 +71,51 @@ describe('deriveFocusTags', () => {
     const tags = deriveFocusTags(market);
     expect(tags).toContain('technology');
   });
+
+  it('tags politician-focused markets by series prefix and role keywords', () => {
+    const chairMarket: NormalizedMarket = {
+      ...politicsMarket,
+      ticker: 'KXNEXTDNCCHAIR-45-PBUT',
+      eventTicker: 'KXNEXTDNCCHAIR-45',
+      seriesTicker: 'KXNEXTDNCCHAIR',
+      title: 'Will Pete Buttigieg be the next DNC Chair?',
+    };
+    expect(deriveFocusTags(chairMarket)).toContain('politicians');
+
+    const nomineeMarket: NormalizedMarket = {
+      ...politicsMarket,
+      seriesTicker: 'KXELECT',
+      title: 'Will the Republican nominee win Pennsylvania?',
+    };
+    expect(deriveFocusTags(nomineeMarket)).toContain('politicians');
+  });
+
+  it('tags mention markets by keyword and series prefix', () => {
+    const keywordMarket: NormalizedMarket = {
+      ...politicsMarket,
+      seriesTicker: 'KXDEBATE',
+      title: 'Will the moderator mention climate change during the debate?',
+    };
+    expect(deriveFocusTags(keywordMarket)).toContain('mentions');
+
+    const seriesMarket: NormalizedMarket = {
+      ...politicsMarket,
+      seriesTicker: 'KXMENTIONDEBATE',
+      ticker: 'KXMENTIONDEBATE-25-TARIFF',
+      title: 'Tariffs mentioned in the debate?',
+    };
+    expect(deriveFocusTags(seriesMarket)).toContain('mentions');
+
+    const trumpMentionMarket: NormalizedMarket = {
+      ...politicsMarket,
+      category: 'Mentions',
+      seriesTicker: 'KXTRUMPMENTION',
+      ticker: 'KXTRUMPMENTION-26JUN23-NQE',
+      eventTicker: 'KXTRUMPMENTION-26JUN23',
+      title: 'What will Donald Trump say during Remarks at Mack Trucks?',
+    };
+    expect(deriveFocusTags(trumpMentionMarket)).toContain('mentions');
+  });
 });
 
 describe('matchesFocusFilter', () => {

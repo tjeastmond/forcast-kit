@@ -1,36 +1,55 @@
 {
   "politics": {
-    "categories": ["Politics", "Elections"],
+    "kalshiCategories": ["Politics", "Elections"],
+    "kalshiTags": [],
     "seriesPrefixes": ["KXPRES", "KXGOV", "KXELECT"],
     "keywords": []
   },
+  "politicians": {
+    "kalshiCategories": [],
+    "kalshiTags": [],
+    "seriesPrefixes": ["KXCAND", "KXNOM", "KXNEXT", "KXCAB", "KXSEC"],
+    "keywords": ["Senator", "Representative", "Governor", "nominee", "Secretary"]
+  },
+  "mentions": {
+    "kalshiCategories": ["Mentions"],
+    "kalshiTags": [],
+    "seriesPrefixes": ["KXMENTION", "KXTRUMPMENTION", "KXTRUMPSAY", "KXPOLITICSMENTION", "KXWCMENTION"],
+    "keywords": ["mention", "mentioned"]
+  },
   "weather": {
-    "categories": ["Climate and Weather"],
+    "kalshiCategories": ["Climate and Weather"],
+    "kalshiTags": [],
     "seriesPrefixes": ["KXHIGH", "KXLOW", "KXRAIN"],
     "keywords": []
   },
   "economics": {
-    "categories": ["Economics", "Financials"],
+    "kalshiCategories": ["Economics", "Financials"],
+    "kalshiTags": [],
     "seriesPrefixes": [],
     "keywords": ["GDP", "CPI", "Fed", "unemployment"]
   },
   "technology": {
-    "categories": ["Science and Technology"],
+    "kalshiCategories": ["Science and Technology"],
+    "kalshiTags": [],
     "seriesPrefixes": [],
     "keywords": ["AI", "Apple", "Google", "OpenAI"]
   },
   "crypto": {
-    "categories": ["Crypto"],
+    "kalshiCategories": ["Crypto"],
+    "kalshiTags": [],
     "seriesPrefixes": [],
     "keywords": ["Bitcoin", "Ethereum", "BTC", "ETH"]
   },
   "entertainment": {
-    "categories": ["Entertainment"],
+    "kalshiCategories": ["Entertainment"],
+    "kalshiTags": [],
     "seriesPrefixes": [],
     "keywords": ["Oscar", "Grammy", "box office"]
   },
   "sports": {
-    "categories": ["Sports"],
+    "kalshiCategories": ["Sports"],
+    "kalshiTags": [],
     "seriesPrefixes": [],
     "keywords": []
   }

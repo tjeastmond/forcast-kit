@@ -18,6 +18,7 @@ export {
   deriveFocusTags,
   matchesFocusFilter,
   shouldPersistMarket,
+  type FocusDerivationContext,
   type FocusFilterOptions,
   type FocusRule,
   type FocusRules,
