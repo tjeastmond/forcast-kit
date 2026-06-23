@@ -2,7 +2,7 @@
 
 Handoff guide for agents working on **forcast-kit** — a Bun/TypeScript monorepo that syncs Kalshi prediction markets into local SQLite and exposes them via CLI and HTTP API for downstream research agents.
 
-Full product spec: [`Project_Plan.md`](Project_Plan.md). Release history: [`CHANGELOG.md`](CHANGELOG.md).
+Full product spec: [`Project_Plan.md`](Project_Plan.md). Release history: [`CHANGELOG.md`](CHANGELOG.md). Remaining polish and post-MVP work: [`.ai/handoff-remaining.md`](.ai/handoff-remaining.md).
 
 ---
 
@@ -338,6 +338,19 @@ Do **not** import `@forcast-kit/db` main entry in Vitest-only test files if you 
 - **Issues:** Log bugs in `.ai/issues.md` (create if missing).
 - **Scope:** Minimize diffs; match existing patterns; don't over-engineer.
 
+### Versioning
+
+| Rule                | Detail                                                                     |
+| ------------------- | -------------------------------------------------------------------------- |
+| **Current release** | `0.5.0` (MVP complete). Historical `0.1.0`–`0.5.0` entries stay as-is.     |
+| **Day-to-day**      | Log changes under `[Unreleased]` in `CHANGELOG.md`.                        |
+| **Default bump**    | **Patch** only — `0.5.1`, `0.5.2`, … when cutting a release.               |
+| **Minor bump**      | `0.6.0` only when the user explicitly asks or agrees to a larger release.  |
+| **Major / 1.0.0**   | Only on explicit user instruction. Do not promote to `1.0.0` autonomously. |
+| **Avoid**           | One minor version per phase, milestone, or significant commit.             |
+
+Do not bump `package.json` workspace versions (`0.0.0` placeholders) unless the user asks; **`CHANGELOG.md` is the product version source of truth.**
+
 ---
 
 ## MVP status
@@ -365,10 +378,11 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 ## Learned User Preferences
 
-- Update `CHANGELOG.md` per milestone or significant change when committing phase work.
+- Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **patch** release (`0.5.x`) when appropriate — do not bump minor/major without explicit user approval.
 - Before every commit, run `bun run format` and `bun run typecheck`.
 - When directed to continue through the plan, loop autonomously through phases until MVP exit gates pass without pausing between phases for approval.
-- Initial and milestone commits should document what changed (via CHANGELOG entries and conventional commit messages).
+- Initial commits should document what changed (via CHANGELOG `[Unreleased]` entries and conventional commit messages).
+- Version line stays at **0.5.x** (patch) until the user requests a minor (`0.6.0`) or major (`1.0.0`) bump.
 
 ---
 

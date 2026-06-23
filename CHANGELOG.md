@@ -5,6 +5,8 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+**Version policy (post-MVP):** Current line is **0.5.0**. Accumulate work under `[Unreleased]`. Default release bumps are **patch** only (`0.5.x`). Do not tag a new minor version per phase, milestone, or commit. Bump **minor** (`0.6.0`) or **major / 1.0.0** only when explicitly requested.
+
 ## [Unreleased]
 
 ## [0.5.0] - 2026-06-22
