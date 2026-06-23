@@ -33,7 +33,9 @@ export function mapMarketType(marketType: string): 'binary' | 'scalar' {
 
 export function normalizeEvent(raw: KalshiEvent): NormalizedEvent {
   const settlementSources =
-    raw.settlement_sources?.map((source) => source.name).filter((name) => name.length > 0) ?? [];
+    raw.settlement_sources
+      ?.map((source) => source.name)
+      .filter((name): name is string => name !== undefined && name.length > 0) ?? [];
 
   return {
     provider: PROVIDER,

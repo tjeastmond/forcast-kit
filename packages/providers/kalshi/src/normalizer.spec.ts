@@ -46,4 +46,30 @@ describe('normalizeEventWithMarkets', () => {
     expect(yesSide?.investable).toBe(true);
     expect(noSide?.side).toBe('no');
   });
+
+  it('accepts settlement sources with missing names', () => {
+    const response = kalshiEventsResponseSchema.parse({
+      events: [
+        {
+          event_ticker: 'KXTEST-1',
+          series_ticker: 'KXTEST',
+          title: 'Test event',
+          settlement_sources: [
+            { name: 'Reuters', url: 'https://www.reuters.com' },
+            { url: 'https://example.com' },
+            { name: '', url: 'https://example.org' },
+          ],
+        },
+      ],
+    });
+
+    const event = response.events[0];
+    expect(event).toBeDefined();
+    if (!event) {
+      return;
+    }
+
+    const batch = normalizeEventWithMarkets(event);
+    expect(batch.events[0]?.settlementSources).toEqual(['Reuters']);
+  });
 });

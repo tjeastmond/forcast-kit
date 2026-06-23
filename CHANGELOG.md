@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Focus keyword matching uses word boundaries so `AI` no longer false-positives on "Chair"
+- Kalshi sync accepts settlement sources with missing or empty `name` fields
 
 ### Changed
 

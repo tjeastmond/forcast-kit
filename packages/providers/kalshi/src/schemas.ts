@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const settlementSourceSchema = z
   .object({
-    name: z.string(),
+    name: z.string().optional(),
     url: z.string().optional(),
   })
   .passthrough();
