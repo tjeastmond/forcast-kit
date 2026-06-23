@@ -157,10 +157,13 @@ Run all commands from the repo root with **Bun**.
 bun install
 cp .env.example .env
 bun run db:migrate
+bun run format
 bun run typecheck
 bun run lint
 bun run test
 ```
+
+**Before commit or push:** all four quality checks (`format`, `typecheck`, `lint`, `test`) must pass. Do not push to the remote if any check fails.
 
 ### First Success Criteria (Phase 3 exit gate)
 
@@ -351,6 +354,8 @@ Do **not** import `@forcast-kit/db` main entry in Vitest-only test files if you 
 
 Do not bump `package.json` workspace versions (`0.0.0` placeholders) unless the user asks; **`CHANGELOG.md` is the product version source of truth.**
 
+Cursor rule: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) — format, typecheck, lint, test; no commit/push on failure.
+
 ---
 
 ## MVP status
@@ -379,7 +384,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 ## Learned User Preferences
 
 - Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **patch** release (`0.5.x`) when appropriate — do not bump minor/major without explicit user approval.
-- Before every commit, run `bun run format` and `bun run typecheck`.
+- Before every **commit or push**, run `bun run format`, `bun run typecheck`, `bun run lint`, and `bun run test` — all must pass; never push if any check fails.
 - When directed to continue through the plan, loop autonomously through phases until MVP exit gates pass without pausing between phases for approval.
 - Initial commits should document what changed (via CHANGELOG `[Unreleased]` entries and conventional commit messages).
 - Version line stays at **0.5.x** (patch) until the user requests a minor (`0.6.0`) or major (`1.0.0`) bump.

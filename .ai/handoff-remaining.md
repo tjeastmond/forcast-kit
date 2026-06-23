@@ -114,8 +114,11 @@ These are the highest-value gaps: the API can do things the CLI cannot, or the t
 ```bash
 bun run format
 bun run typecheck
+bun run lint
 bun run test
 bun run db:migrate
 ```
+
+Do not commit or push if any quality check fails.
 
 Update [`CHANGELOG.md`](../CHANGELOG.md) under `[Unreleased]`; release as **patch** (`0.5.x`) unless the user requests a higher bump. No AI attribution in commits.

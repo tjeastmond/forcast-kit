@@ -7,4 +7,6 @@ data/
 *.tsbuildinfo
 .DS_Store
 coverage/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
