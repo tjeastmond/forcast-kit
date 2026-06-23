@@ -18,7 +18,7 @@ export function AppShell({
   hasUnsavedEdits?: boolean;
   onTitleClick?: () => void;
 }) {
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
   const pathname = usePathname();
 
   return (
@@ -47,8 +47,10 @@ export function AppShell({
               className="header-toolbar-outline"
               onClick={toggleTheme}
               aria-label="Toggle theme"
+              suppressHydrationWarning
             >
-              {theme === 'light' ? <MoonIcon className="size-4" /> : <SunIcon className="size-4" />}
+              <MoonIcon className="size-4 dark:hidden" />
+              <SunIcon className="hidden size-4 dark:block" />
             </Button>
             <SyncAdminButton hasUnsavedEdits={hasUnsavedEdits} />
           </div>

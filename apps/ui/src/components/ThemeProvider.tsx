@@ -1,24 +1,26 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-
-type Theme = 'light' | 'dark';
+import { readThemeFromStorage, THEME_STORAGE_KEY, writeThemeCookie, type Theme } from '@/lib/theme';
 
 const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void } | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
+export function ThemeProvider({ children, initialTheme }: { children: ReactNode; initialTheme: Theme }) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
-    const stored = localStorage.getItem('forcast-kit-theme');
-    if (stored === 'dark' || stored === 'light') {
+    const stored = readThemeFromStorage();
+    if (stored !== initialTheme) {
       setTheme(stored);
+      return;
     }
-  }, []);
+    localStorage.setItem(THEME_STORAGE_KEY, initialTheme);
+  }, [initialTheme]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('forcast-kit-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    writeThemeCookie(theme);
   }, [theme]);
 
   return (
