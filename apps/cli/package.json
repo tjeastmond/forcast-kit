@@ -11,6 +11,7 @@
     "@forcast-kit/core": "workspace:*",
     "@forcast-kit/db": "workspace:*",
     "@forcast-kit/provider-kalshi": "workspace:*",
+    "@forcast-kit/provider-polymarket": "workspace:*",
     "ink": "^6.0.1",
     "react": "^19.1.0"
   },

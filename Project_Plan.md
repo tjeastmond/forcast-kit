@@ -666,43 +666,43 @@ Each phase has an **exit gate** — do not start the next phase until the gate p
 
 ### Phase 1 — Scaffold (exit gate: `bun run typecheck && bun run db:migrate` succeed)
 
-- [ ] Bun workspace monorepo with packages above
-- [ ] Strict TypeScript, ESLint, Prettier, Vitest wired
-- [ ] Drizzle schema for all tables + initial migration
-- [ ] Ink CLI shell with command router (stub commands)
-- [ ] Fastify API skeleton with `/health`
-- [ ] `.env.example` and config loader in `packages/core`
+- [x] Bun workspace monorepo with packages above
+- [x] Strict TypeScript, ESLint, Prettier, Vitest wired
+- [x] Drizzle schema for all tables + initial migration
+- [x] Ink CLI shell with command router (stub commands)
+- [x] Fastify API skeleton with `/health`
+- [x] `.env.example` and config loader in `packages/core`
 
 ### Phase 2 — Kalshi sync (exit gate: sync stores ≥1 open market in SQLite)
 
-- [ ] `KalshiProvider` with pagination and Zod validation
-- [ ] Normalizer (Kalshi → domain models)
-- [ ] Repositories (upsert events, markets, sides)
-- [ ] `SyncService` with `sync_runs` audit
-- [ ] Retry/backoff for rate limits
-- [ ] Unit tests with fixtures
+- [x] `KalshiProvider` with pagination and Zod validation
+- [x] Normalizer (Kalshi → domain models)
+- [x] Repositories (upsert events, markets, sides)
+- [x] `SyncService` with `sync_runs` audit
+- [x] Retry/backoff for rate limits
+- [x] Unit tests with fixtures
 
 ### Phase 3 — Query & filter (exit gate: First Success Criteria passes)
 
-- [ ] Focus tagging rules + `--focus` / `--exclude` on sync and list
-- [ ] CLI: `list`, `inspect`, sync progress UI
-- [ ] API: `/markets`, `/events`, `/markets/:ticker` with filters
-- [ ] `POST /sync` and `GET /sync/:id`
-- [ ] Integration tests for API + CLI parity
+- [x] Focus tagging rules + `--focus` / `--exclude` on sync and list
+- [x] CLI: `list`, `inspect`, sync progress UI
+- [x] API: `/markets`, `/events`, `/markets/:ticker` with filters
+- [x] `POST /sync` and `GET /sync/:id`
+- [x] Integration tests for API + CLI parity
 
 ### Phase 4 — Agent export (exit gate: export JSON validates against schema)
 
-- [ ] `GET /markets/:ticker/export` stable schema v1.0
-- [ ] Derived metrics (spread, mid price, implied probability)
-- [ ] Incremental sync via `min_updated_ts`
-- [ ] Stale-market flagging for markets absent from latest sync
+- [x] `GET /markets/:ticker/export` stable schema v1.0
+- [x] Derived metrics (spread, mid price, implied probability)
+- [x] Incremental sync via `min_updated_ts`
+- [x] Stale-market flagging for markets absent from latest sync
 
 ### Phase 5 — Multi-provider (exit gate: stub compiles; design doc for Polymarket mapping)
 
-- [ ] `PolymarketProvider` stub implementing interface
-- [ ] Provider registry in `SyncService`
-- [ ] Unified query layer (markets from any provider)
-- [ ] Polymarket field-mapping design (separate doc when started)
+- [x] `PolymarketProvider` stub implementing interface
+- [x] Provider registry in `SyncService`
+- [x] Unified query layer (markets from any provider)
+- [x] Polymarket field-mapping design (separate doc when started)
 
 ---
 

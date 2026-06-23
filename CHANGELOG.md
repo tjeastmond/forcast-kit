@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CLI `--full` flag for full sync with stale-market marking (parity with `POST /sync`)
+- CLI `events` command to list events and show event detail with filtered markets
+- CLI sync resolves providers via `ProviderRegistry` (same pattern as API)
+- CLI argument-parsing tests and API/CLI list parity integration test
+
+### Fixed
+
+- Focus keyword matching uses word boundaries so `AI` no longer false-positives on "Chair"
+
+### Changed
+
+- `Project_Plan.md` milestone checkboxes marked complete for Phases 1–5
+- Drizzle migration snapshot chain completed for `0001_add_market_stale`
+
 ## [0.5.0] - 2026-06-22
 
 ### Added

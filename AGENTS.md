@@ -193,14 +193,13 @@ Entry: `forcast-kit` (bin → `apps/cli/src/index.tsx`)
 | ------------- | ----------------------------------------------------------- |
 | `sync kalshi` | `forcast-kit sync kalshi --focus politics --exclude sports` |
 | `list`        | `forcast-kit list --focus politics --status open`           |
+| `events`      | `forcast-kit events --focus politics`                       |
 | `inspect`     | `forcast-kit inspect KXPRES-24-DEM`                         |
 | `serve`       | `forcast-kit serve --port 3847`                             |
 
-**Flags:** `--focus`, `--exclude`, `--status`, `--limit`, `--max-pages`, `--no-ui`, `--verbose`, `--help`
+**Flags:** `--focus`, `--exclude`, `--status`, `--limit`, `--max-pages`, `--full`, `--no-ui`, `--verbose`, `--help`
 
-Use `--no-ui` for scripts and CI. Interactive sync uses Ink (`SyncApp.tsx`).
-
-**Gaps:** no CLI `events` command; no CLI `--full` flag (API `POST /sync` accepts `full: true` for full sync + stale marking). CLI sync hardcodes `KalshiProvider` (registry is API-only).
+Use `--no-ui` for scripts and CI. Interactive sync uses Ink (`SyncApp.tsx`). CLI sync resolves providers via `ProviderRegistry` (default `kalshi`).
 
 ---
 
@@ -248,7 +247,7 @@ Migrations: `packages/db/migrations/0000_omniscient_kree.sql`, `0001_add_market_
 
 Kalshi “questions” map to **`events`**; tradable outcomes map to **`markets`**, linked by `markets.event_ticker`.
 
-Example: event `KXNEXTDNCCHAIR-45` (“Who will be the next DNC Chair?”) has many markets (`KXNEXTDNCCHAIR-45-PBUT`, …). Use `GET /events/:eventTicker` to fetch the parent question and all outcomes. CLI has no `events` command yet — use the API or `inspect <ticker>`.
+Example: event `KXNEXTDNCCHAIR-45` (“Who will be the next DNC Chair?”) has many markets (`KXNEXTDNCCHAIR-45-PBUT`, …). Use `GET /events/:eventTicker` or `forcast-kit events KXNEXTDNCCHAIR-45` to fetch the parent question and all outcomes.
 
 ### Stored vs derived pricing
 

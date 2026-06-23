@@ -1,7 +1,5 @@
 import { setLogLevel } from '@forcast-kit/core';
 import { getFlagString, hasFlag, HELP_TEXT, type ParsedArgs } from '../args.js';
-import { runInspectCommand, runListCommand } from './list.js';
-import { runSyncCommand } from './sync.js';
 
 export interface CommandResult {
   readonly exitCode: number;
@@ -19,11 +17,13 @@ export async function runCommand(args: ParsedArgs): Promise<CommandResult> {
 
   switch (args.command) {
     case 'sync':
-      return runSyncCommand(args);
+      return (await import('./sync.js')).runSyncCommand(args);
     case 'list':
-      return runListCommand(args);
+      return (await import('./list.js')).runListCommand(args);
+    case 'events':
+      return (await import('./events.js')).runEventsCommand(args);
     case 'inspect':
-      return runInspectCommand(args);
+      return (await import('./list.js')).runInspectCommand(args);
     case 'serve':
       return runServeCommand(args);
     case undefined:

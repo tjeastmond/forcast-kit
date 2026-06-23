@@ -15,6 +15,15 @@ function textIncludesKeyword(text: string, keyword: string): boolean {
   return text.toLowerCase().includes(keyword.toLowerCase());
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function textMatchesKeyword(text: string, keyword: string): boolean {
+  const pattern = new RegExp(`\\b${escapeRegExp(keyword)}\\b`, 'i');
+  return pattern.test(text);
+}
+
 function matchesCategory(category: string | null, ruleCategories: readonly string[]): boolean {
   if (!category) {
     return false;
@@ -28,7 +37,7 @@ function matchesSeriesPrefix(seriesTicker: string, prefixes: readonly string[]):
 
 function matchesKeywords(market: NormalizedMarket, keywords: readonly string[]): boolean {
   const searchText = [market.title, market.subtitle, market.ticker, market.eventTicker].join(' ');
-  return keywords.some((keyword) => textIncludesKeyword(searchText, keyword));
+  return keywords.some((keyword) => textMatchesKeyword(searchText, keyword));
 }
 
 export function deriveFocusTags(market: NormalizedMarket): Focus[] {

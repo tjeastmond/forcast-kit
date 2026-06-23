@@ -47,6 +47,30 @@ describe('deriveFocusTags', () => {
     const tags = deriveFocusTags(market);
     expect(tags).toContain('weather');
   });
+
+  it('does not tag DNC chair markets as technology from AI substring in Chair', () => {
+    const market: NormalizedMarket = {
+      ...politicsMarket,
+      ticker: 'KXNEXTDNCCHAIR-45-PBUT',
+      eventTicker: 'KXNEXTDNCCHAIR-45',
+      seriesTicker: 'KXNEXTDNCCHAIR',
+      title: 'Will Pete Buttigieg be the next DNC Chair?',
+      category: 'Politics',
+    };
+    const tags = deriveFocusTags(market);
+    expect(tags).toContain('politics');
+    expect(tags).not.toContain('technology');
+  });
+
+  it('still tags technology markets when AI appears as a word', () => {
+    const market: NormalizedMarket = {
+      ...politicsMarket,
+      category: 'Science and Technology',
+      title: 'Will AI surpass human intelligence by 2030?',
+    };
+    const tags = deriveFocusTags(market);
+    expect(tags).toContain('technology');
+  });
 });
 
 describe('matchesFocusFilter', () => {

@@ -1,28 +1,26 @@
 import { loadConfig, parseFocusList } from '@forcast-kit/core';
-import { createDatabase, createQueryServices } from '@forcast-kit/db';
+import type { QueryServices } from '@forcast-kit/db/query';
 import { getFlagString, type ParsedArgs } from '../args.js';
 import type { CommandResult } from './index.js';
 
-export async function runListCommand(args: ParsedArgs): Promise<CommandResult> {
-  const config = loadConfig();
-  const db = createDatabase(config.FORCAST_KIT_DB_PATH);
-  const query = createQueryServices(db);
+function parseLimitFlag(limitFlag: string | undefined): number {
+  if (!limitFlag) {
+    return 50;
+  }
+  const parsed = Number.parseInt(limitFlag, 10);
+  return Number.isFinite(parsed) ? parsed : 50;
+}
 
-  const focus = parseFocusList(getFlagString(args.flags, 'focus'));
-  const exclude = parseFocusList(getFlagString(args.flags, 'exclude'));
-  const status = getFlagString(args.flags, 'status');
-  const limitFlag = getFlagString(args.flags, 'limit');
-  const limit = limitFlag ? Number.parseInt(limitFlag, 10) : 50;
-
-  const { markets } = await query.markets.listMarkets({
-    ...(focus.length > 0 ? { focus } : {}),
-    ...(exclude.length > 0 ? { exclude } : {}),
-    ...(status !== undefined ? { status } : {}),
-    limit: Number.isFinite(limit) ? limit : 50,
-  });
-
+export function formatMarketList(
+  markets: readonly {
+    ticker: string;
+    status: string;
+    focusTags: readonly string[];
+    title: string;
+  }[],
+): string {
   if (markets.length === 0) {
-    return { exitCode: 0, message: 'No markets found.' };
+    return 'No markets found.';
   }
 
   const lines = markets.map(
@@ -30,10 +28,37 @@ export async function runListCommand(args: ParsedArgs): Promise<CommandResult> {
       `${market.ticker.padEnd(24)} ${market.status.padEnd(8)} ${market.focusTags.join(',') || '-'}  ${market.title}`,
   );
 
-  return {
-    exitCode: 0,
-    message: [`TICKER                   STATUS   FOCUS     TITLE`, ...lines].join('\n'),
-  };
+  return [`TICKER                   STATUS   FOCUS     TITLE`, ...lines].join('\n');
+}
+
+export function parseTickersFromListOutput(output: string): string[] {
+  const lines = output.split('\n').slice(1);
+  return lines.map((line) => line.slice(0, 24).trim()).filter((ticker) => ticker.length > 0);
+}
+
+export async function listMarketsWithQuery(query: QueryServices, args: ParsedArgs): Promise<CommandResult> {
+  const focus = parseFocusList(getFlagString(args.flags, 'focus'));
+  const exclude = parseFocusList(getFlagString(args.flags, 'exclude'));
+  const status = getFlagString(args.flags, 'status');
+  const limit = parseLimitFlag(getFlagString(args.flags, 'limit'));
+
+  const { markets } = await query.markets.listMarkets({
+    ...(focus.length > 0 ? { focus } : {}),
+    ...(exclude.length > 0 ? { exclude } : {}),
+    ...(status !== undefined ? { status } : {}),
+    limit,
+  });
+
+  return { exitCode: 0, message: formatMarketList(markets) };
+}
+
+export async function runListCommand(args: ParsedArgs): Promise<CommandResult> {
+  const config = loadConfig();
+  const { createDatabase } = await import('@forcast-kit/db');
+  const { createQueryServices } = await import('@forcast-kit/db/query');
+  const db = createDatabase(config.FORCAST_KIT_DB_PATH);
+  const query = createQueryServices(db);
+  return listMarketsWithQuery(query, args);
 }
 
 export async function runInspectCommand(args: ParsedArgs): Promise<CommandResult> {
@@ -43,6 +68,8 @@ export async function runInspectCommand(args: ParsedArgs): Promise<CommandResult
   }
 
   const config = loadConfig();
+  const { createDatabase } = await import('@forcast-kit/db');
+  const { createQueryServices } = await import('@forcast-kit/db/query');
   const db = createDatabase(config.FORCAST_KIT_DB_PATH);
   const query = createQueryServices(db);
 
