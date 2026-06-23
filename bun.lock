@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "forcast-kit",
+      "name": "forecast-kit",
       "devDependencies": {
         "@eslint/js": "^9.28.0",
         "@types/better-sqlite3": "^7.6.13",
@@ -19,27 +19,27 @@
       },
     },
     "apps/api": {
-      "name": "@forcast-kit/api",
+      "name": "@forecast-kit/api",
       "version": "0.0.0",
       "dependencies": {
         "@fastify/cors": "^11.0.1",
-        "@forcast-kit/core": "workspace:*",
-        "@forcast-kit/db": "workspace:*",
-        "@forcast-kit/provider-kalshi": "workspace:*",
-        "@forcast-kit/provider-polymarket": "workspace:*",
+        "@forecast-kit/core": "workspace:*",
+        "@forecast-kit/db": "workspace:*",
+        "@forecast-kit/provider-kalshi": "workspace:*",
+        "@forecast-kit/provider-polymarket": "workspace:*",
         "fastify": "^5.3.3",
         "zod": "^3.25.36",
       },
     },
     "apps/cli": {
-      "name": "@forcast-kit/cli",
+      "name": "@forecast-kit/cli",
       "version": "0.0.0",
       "dependencies": {
-        "@forcast-kit/api": "workspace:*",
-        "@forcast-kit/core": "workspace:*",
-        "@forcast-kit/db": "workspace:*",
-        "@forcast-kit/provider-kalshi": "workspace:*",
-        "@forcast-kit/provider-polymarket": "workspace:*",
+        "@forecast-kit/api": "workspace:*",
+        "@forecast-kit/core": "workspace:*",
+        "@forecast-kit/db": "workspace:*",
+        "@forecast-kit/provider-kalshi": "workspace:*",
+        "@forecast-kit/provider-polymarket": "workspace:*",
         "ink": "^6.0.1",
         "react": "^19.1.0",
       },
@@ -48,7 +48,7 @@
       },
     },
     "apps/ui": {
-      "name": "@forcast-kit/ui",
+      "name": "@forecast-kit/ui",
       "version": "0.0.0",
       "dependencies": {
         "class-variance-authority": "^0.7.1",
@@ -69,17 +69,17 @@
       },
     },
     "packages/core": {
-      "name": "@forcast-kit/core",
+      "name": "@forecast-kit/core",
       "version": "0.0.0",
       "dependencies": {
         "zod": "^3.25.51",
       },
     },
     "packages/db": {
-      "name": "@forcast-kit/db",
+      "name": "@forecast-kit/db",
       "version": "0.0.0",
       "dependencies": {
-        "@forcast-kit/core": "workspace:*",
+        "@forecast-kit/core": "workspace:*",
         "drizzle-orm": "^0.44.2",
       },
       "devDependencies": {
@@ -88,18 +88,18 @@
       },
     },
     "packages/providers/kalshi": {
-      "name": "@forcast-kit/provider-kalshi",
+      "name": "@forecast-kit/provider-kalshi",
       "version": "0.0.0",
       "dependencies": {
-        "@forcast-kit/core": "workspace:*",
+        "@forecast-kit/core": "workspace:*",
         "zod": "^3.25.51",
       },
     },
     "packages/providers/polymarket": {
-      "name": "@forcast-kit/provider-polymarket",
+      "name": "@forecast-kit/provider-polymarket",
       "version": "0.0.0",
       "dependencies": {
-        "@forcast-kit/core": "workspace:*",
+        "@forecast-kit/core": "workspace:*",
       },
     },
   },
@@ -200,19 +200,19 @@
 
     "@fastify/proxy-addr": ["@fastify/proxy-addr@5.1.0", "", { "dependencies": { "@fastify/forwarded": "^3.0.0", "ipaddr.js": "^2.1.0" } }, "sha512-INS+6gh91cLUjB+PVHfu1UqcB76Sqtpyp7bnL+FYojhjygvOPA9ctiD/JDKsyD9Xgu4hUhCSJBPig/w7duNajw=="],
 
-    "@forcast-kit/api": ["@forcast-kit/api@workspace:apps/api"],
+    "@forecast-kit/api": ["@forecast-kit/api@workspace:apps/api"],
 
-    "@forcast-kit/cli": ["@forcast-kit/cli@workspace:apps/cli"],
+    "@forecast-kit/cli": ["@forecast-kit/cli@workspace:apps/cli"],
 
-    "@forcast-kit/core": ["@forcast-kit/core@workspace:packages/core"],
+    "@forecast-kit/core": ["@forecast-kit/core@workspace:packages/core"],
 
-    "@forcast-kit/db": ["@forcast-kit/db@workspace:packages/db"],
+    "@forecast-kit/db": ["@forecast-kit/db@workspace:packages/db"],
 
-    "@forcast-kit/provider-kalshi": ["@forcast-kit/provider-kalshi@workspace:packages/providers/kalshi"],
+    "@forecast-kit/provider-kalshi": ["@forecast-kit/provider-kalshi@workspace:packages/providers/kalshi"],
 
-    "@forcast-kit/provider-polymarket": ["@forcast-kit/provider-polymarket@workspace:packages/providers/polymarket"],
+    "@forecast-kit/provider-polymarket": ["@forecast-kit/provider-polymarket@workspace:packages/providers/polymarket"],
 
-    "@forcast-kit/ui": ["@forcast-kit/ui@workspace:apps/ui"],
+    "@forecast-kit/ui": ["@forecast-kit/ui@workspace:apps/ui"],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 

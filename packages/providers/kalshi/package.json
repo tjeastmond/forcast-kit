@@ -1,5 +1,5 @@
 {
-  "name": "@forcast-kit/provider-kalshi",
+  "name": "@forecast-kit/provider-kalshi",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@forcast-kit/core": "workspace:*",
+    "@forecast-kit/core": "workspace:*",
     "zod": "^3.25.51"
   }
 }

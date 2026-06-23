@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { kalshiEventsResponseSchema } from './schemas.js';
-import { normalizeEventWithMarkets } from './normalizer.js';
+import { deriveMarketSubtitle, normalizeEventWithMarkets } from './normalizer.js';
 
 const fixturePath = join(dirname(fileURLToPath(import.meta.url)), '../fixtures/events-page.json');
 
@@ -71,5 +71,22 @@ describe('normalizeEventWithMarkets', () => {
 
     const batch = normalizeEventWithMarkets(event);
     expect(batch.events[0]?.settlementSources).toEqual(['Reuters']);
+  });
+
+  it('maps yes_sub_title to market subtitle for mention-style markets', () => {
+    expect(
+      deriveMarketSubtitle({
+        ticker: 'KXTRUMPMENTION-26JUN23-IRAN',
+        event_ticker: 'KXTRUMPMENTION-26JUN23',
+        title: 'What will Donald Trump say during Remarks at Mack Trucks?',
+        status: 'active',
+        market_type: 'binary',
+        close_time: '2026-07-08T14:00:00Z',
+        open_time: '2026-06-22T15:33:00Z',
+        yes_sub_title: 'Iran (5+ times)',
+        no_sub_title: 'Iran (5+ times)',
+        custom_strike: { Word: 'Iran (5+ times)' },
+      }),
+    ).toBe('Iran (5+ times)');
   });
 });

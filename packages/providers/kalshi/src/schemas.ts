@@ -65,7 +65,39 @@ export const kalshiEventResponseSchema = z
   })
   .passthrough();
 
+export const kalshiTagsByCategoriesResponseSchema = z
+  .object({
+    tags_by_categories: z.record(z.string(), z.array(z.string()).nullable()),
+  })
+  .passthrough();
+
+export const kalshiSeriesSchema = z
+  .object({
+    ticker: z.string(),
+    frequency: z.string(),
+    title: z.string(),
+    category: z.string(),
+    tags: z.array(z.string()).nullable().optional(),
+    last_updated_ts: z.string().optional(),
+    settlement_sources: z.array(settlementSourceSchema).nullable().optional(),
+    contract_url: z.string().optional(),
+    contract_terms_url: z.string().optional(),
+    fee_type: z.string().optional(),
+    fee_multiplier: z.number().optional(),
+    volume_fp: z.string().optional(),
+  })
+  .passthrough();
+
+export const kalshiSeriesListResponseSchema = z
+  .object({
+    series: z.array(kalshiSeriesSchema),
+  })
+  .passthrough();
+
 export type KalshiMarket = z.infer<typeof kalshiMarketSchema>;
 export type KalshiEvent = z.infer<typeof kalshiEventSchema>;
 export type KalshiEventsResponse = z.infer<typeof kalshiEventsResponseSchema>;
 export type KalshiEventResponse = z.infer<typeof kalshiEventResponseSchema>;
+export type KalshiTagsByCategoriesResponse = z.infer<typeof kalshiTagsByCategoriesResponseSchema>;
+export type KalshiSeries = z.infer<typeof kalshiSeriesSchema>;
+export type KalshiSeriesListResponse = z.infer<typeof kalshiSeriesListResponseSchema>;

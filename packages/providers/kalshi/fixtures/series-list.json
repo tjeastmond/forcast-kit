@@ -1,0 +1,32 @@
+{
+  "series": [
+    {
+      "ticker": "KXPRES",
+      "frequency": "one-off",
+      "title": "Presidential election markets",
+      "category": "Politics",
+      "tags": ["US Elections", "Presidential"],
+      "settlement_sources": [],
+      "contract_url": "https://kalshi.com",
+      "contract_terms_url": "https://kalshi.com",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1,
+      "additional_prohibitions": [],
+      "last_updated_ts": "2025-01-15T12:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHNY",
+      "frequency": "daily",
+      "title": "Daily high temperature in NYC",
+      "category": "Climate and Weather",
+      "tags": ["Temperature"],
+      "settlement_sources": [],
+      "contract_url": "https://kalshi.com",
+      "contract_terms_url": "https://kalshi.com",
+      "fee_type": "quadratic",
+      "fee_multiplier": 1,
+      "additional_prohibitions": [],
+      "last_updated_ts": "2025-01-15T12:00:00Z"
+    }
+  ]
+}

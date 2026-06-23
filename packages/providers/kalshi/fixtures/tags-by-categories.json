@@ -1,0 +1,8 @@
+{
+  "tags_by_categories": {
+    "Politics": ["US Elections", "Congress", "Presidential"],
+    "Sports": ["NFL", "NBA", "MLB"],
+    "Climate and Weather": ["Temperature", "Precipitation"],
+    "Science and Technology": null
+  }
+}

@@ -7,11 +7,11 @@ import type {
   PredictionMarketProvider,
   ProviderEventBatch,
   ProviderMarket,
-} from '@forcast-kit/core';
-import { logger } from '@forcast-kit/core';
-import { KalshiClient } from './client.js';
+} from '@forecast-kit/core';
+import { logger } from '@forecast-kit/core';
+import { KalshiClient, type TaxonomySeriesRow } from './client.js';
 import { normalizeEventWithMarkets, normalizeMarket, deriveBinarySides } from './normalizer.js';
-import { kalshiEventSchema, kalshiMarketSchema } from './schemas.js';
+import { kalshiEventSchema, kalshiMarketSchema, type KalshiTagsByCategoriesResponse } from './schemas.js';
 
 export class KalshiProvider implements PredictionMarketProvider {
   readonly id = 'kalshi' as const;
@@ -135,5 +135,56 @@ export class KalshiProvider implements PredictionMarketProvider {
     const sides = market.marketType === 'binary' ? deriveBinarySides(market) : [];
 
     return { market, sides };
+  }
+
+  async fetchTagsByCategories(): Promise<KalshiTagsByCategoriesResponse> {
+    return this.client.fetchTagsByCategories();
+  }
+
+  async fetchAllSeries(options?: {
+    readonly categories?: readonly string[];
+    readonly minUpdatedTs?: number;
+  }): Promise<TaxonomySeriesRow[]> {
+    const series: TaxonomySeriesRow[] = [];
+    const categories = options?.categories ?? [];
+
+    if (categories.length === 0) {
+      const response = await this.client.fetchSeriesList({
+        includeVolume: true,
+        includeProductMetadata: true,
+        ...(options?.minUpdatedTs !== undefined ? { minUpdatedTs: options.minUpdatedTs } : {}),
+      });
+      series.push(
+        ...response.series.map((row) => ({
+          ticker: row.ticker,
+          category: row.category,
+          title: row.title,
+          tags: row.tags ?? null,
+          ...(row.last_updated_ts !== undefined ? { last_updated_ts: row.last_updated_ts } : {}),
+        })),
+      );
+      return series;
+    }
+
+    for (const category of categories) {
+      const response = await this.client.fetchSeriesList({
+        category,
+        includeVolume: true,
+        includeProductMetadata: true,
+        ...(options?.minUpdatedTs !== undefined ? { minUpdatedTs: options.minUpdatedTs } : {}),
+      });
+      series.push(
+        ...response.series.map((row) => ({
+          ticker: row.ticker,
+          category: row.category,
+          title: row.title,
+          tags: row.tags ?? null,
+          ...(row.last_updated_ts !== undefined ? { last_updated_ts: row.last_updated_ts } : {}),
+        })),
+      );
+      await this.client.delayBetweenPages();
+    }
+
+    return series;
   }
 }

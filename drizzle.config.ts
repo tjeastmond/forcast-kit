@@ -5,6 +5,6 @@ export default defineConfig({
   out: './packages/db/migrations',
   dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.FORCAST_KIT_DB_PATH ?? './data/forcast-kit.db',
+    url: process.env.FORECAST_KIT_DB_PATH ?? './data/forecast-kit.db',
   },
 });

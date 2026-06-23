@@ -4,7 +4,7 @@ import type {
   NormalizedMarket,
   NormalizedMarketSide,
   ProviderEventBatch,
-} from '@forcast-kit/core';
+} from '@forecast-kit/core';
 import { parseDecimal, parseDecimalOrNull } from './parse-decimal.js';
 import type { KalshiEvent, KalshiMarket } from './schemas.js';
 
@@ -29,6 +29,34 @@ export function mapKalshiStatus(status: string): MarketStatus {
 
 export function mapMarketType(marketType: string): 'binary' | 'scalar' {
   return marketType === 'scalar' ? 'scalar' : 'binary';
+}
+
+function customStrikeWord(raw: KalshiMarket): string {
+  const strike = raw.custom_strike;
+  if (strike !== null && strike !== undefined && typeof strike === 'object' && 'Word' in strike) {
+    const word = strike['Word'];
+    if (typeof word === 'string' && word.trim().length > 0) {
+      return word.trim();
+    }
+  }
+  return '';
+}
+
+export function deriveMarketSubtitle(raw: KalshiMarket): string {
+  if (raw.yes_sub_title?.trim()) {
+    return raw.yes_sub_title.trim();
+  }
+
+  const word = customStrikeWord(raw);
+  if (word.length > 0) {
+    return word;
+  }
+
+  if (raw.no_sub_title?.trim()) {
+    return raw.no_sub_title.trim();
+  }
+
+  return '';
 }
 
 export function normalizeEvent(raw: KalshiEvent): NormalizedEvent {
@@ -58,7 +86,7 @@ export function normalizeMarket(raw: KalshiMarket, event: KalshiEvent): Normaliz
     eventTicker: raw.event_ticker,
     seriesTicker: event.series_ticker,
     title: raw.title,
-    subtitle: '',
+    subtitle: deriveMarketSubtitle(raw),
     category: event.category ?? null,
     marketType: mapMarketType(raw.market_type),
     status: mapKalshiStatus(raw.status),

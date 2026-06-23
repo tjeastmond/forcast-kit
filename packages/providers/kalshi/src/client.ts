@@ -1,11 +1,15 @@
-import { logger } from '@forcast-kit/core';
+import { logger } from '@forecast-kit/core';
 import {
   kalshiEventResponseSchema,
   kalshiEventsResponseSchema,
   kalshiMarketResponseSchema,
+  kalshiSeriesListResponseSchema,
+  kalshiTagsByCategoriesResponseSchema,
   type KalshiEventResponse,
   type KalshiEventsResponse,
   type KalshiMarket,
+  type KalshiSeriesListResponse,
+  type KalshiTagsByCategoriesResponse,
 } from './schemas.js';
 
 const MAX_RETRIES = 5;
@@ -22,6 +26,22 @@ export interface FetchEventsPageParams {
   readonly status?: 'open' | 'closed' | 'settled';
   readonly minUpdatedTs?: number;
   readonly seriesTicker?: string;
+}
+
+export interface FetchSeriesListParams {
+  readonly category?: string;
+  readonly tags?: string;
+  readonly minUpdatedTs?: number;
+  readonly includeVolume?: boolean;
+  readonly includeProductMetadata?: boolean;
+}
+
+export interface TaxonomySeriesRow {
+  readonly ticker: string;
+  readonly category: string;
+  readonly title: string;
+  readonly tags: readonly string[] | null;
+  readonly last_updated_ts?: string;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -81,6 +101,34 @@ export class KalshiClient {
       }
       throw error;
     }
+  }
+
+  async fetchTagsByCategories(): Promise<KalshiTagsByCategoriesResponse> {
+    const url = new URL(`${this.config.baseUrl}/search/tags_by_categories`);
+    const json: unknown = await this.requestJson(url);
+    return kalshiTagsByCategoriesResponseSchema.parse(json);
+  }
+
+  async fetchSeriesList(params: FetchSeriesListParams = {}): Promise<KalshiSeriesListResponse> {
+    const url = new URL(`${this.config.baseUrl}/series`);
+    if (params.category) {
+      url.searchParams.set('category', params.category);
+    }
+    if (params.tags) {
+      url.searchParams.set('tags', params.tags);
+    }
+    if (params.minUpdatedTs !== undefined) {
+      url.searchParams.set('min_updated_ts', String(params.minUpdatedTs));
+    }
+    if (params.includeVolume === true) {
+      url.searchParams.set('include_volume', 'true');
+    }
+    if (params.includeProductMetadata === true) {
+      url.searchParams.set('include_product_metadata', 'true');
+    }
+
+    const json: unknown = await this.requestJson(url);
+    return kalshiSeriesListResponseSchema.parse(json);
   }
 
   async fetchMarket(ticker: string): Promise<KalshiMarket | null> {
