@@ -34,14 +34,14 @@ export const MarketCard = memo(function MarketCard({
           onOpen(market.ticker);
         }}
       />
-      <CardHeader className="pointer-events-none relative z-10 flex flex-row items-start justify-between gap-3 space-y-0 py-4">
-        <div className="min-w-0 flex-1 space-y-1 text-left">
+      <CardHeader className="pointer-events-none relative z-10 space-y-0 py-4">
+        <div className="min-w-0 space-y-1 text-left">
           <CardTitle>{displayTitle}</CardTitle>
           <p className="text-muted-foreground text-sm">
             {market.eventTicker} · {market.status}
             {market.focusTags.length > 0 ? ` · ${market.focusTags.join(', ')}` : ''} · {formatDate(market.closeTime)}
           </p>
-          <p className="text-sm">
+          <p className="text-sm tabular-nums">
             Last {formatPrice(market.lastPrice)}
             {market.isStale ? (
               <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
@@ -49,23 +49,26 @@ export const MarketCard = memo(function MarketCard({
               </span>
             ) : null}
             <span className="text-muted-foreground ml-2 text-xs uppercase">kalshi</span>
+            {hasPricing ? (
+              <>
+                {yesPct !== null ? (
+                  <>
+                    <span className="text-muted-foreground"> · </span>
+                    <span className="text-muted-foreground">Yes</span>{' '}
+                    <span className="text-green-600 dark:text-green-400">{formatPrice(yesPct)}</span>
+                  </>
+                ) : null}
+                {noPct !== null ? (
+                  <>
+                    <span className="text-muted-foreground"> · </span>
+                    <span className="text-muted-foreground">No</span>{' '}
+                    <span className="text-red-600 dark:text-red-400">{formatPrice(noPct)}</span>
+                  </>
+                ) : null}
+              </>
+            ) : null}
           </p>
         </div>
-        {hasPricing ? (
-          <p className="shrink-0 text-right text-sm tabular-nums">
-            {yesPct !== null ? (
-              <>
-                <span className="text-muted-foreground">Yes</span> {formatPrice(yesPct)}
-              </>
-            ) : null}
-            {yesPct !== null && noPct !== null ? <span className="text-muted-foreground"> · </span> : null}
-            {noPct !== null ? (
-              <>
-                <span className="text-muted-foreground">No</span> {formatPrice(noPct)}
-              </>
-            ) : null}
-          </p>
-        ) : null}
       </CardHeader>
     </Card>
   );
