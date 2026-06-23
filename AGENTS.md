@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Handoff guide for agents working on **forecast-kit** — a Bun/TypeScript monorepo that syncs Kalshi prediction markets into local SQLite and exposes them via CLI and HTTP API for downstream research agents.
+Handoff guide for agents working on **forecast-kit** — a Bun/TypeScript monorepo that syncs Kalshi prediction markets into local SQLite and exposes them via CLI, HTTP API, and browser explorer for downstream research agents.
 
 Full product spec: [`Project_Plan.md`](Project_Plan.md). Release history: [`CHANGELOG.md`](CHANGELOG.md). Remaining polish and post-MVP work: [`.ai/handoff-remaining.md`](.ai/handoff-remaining.md).
 
@@ -23,21 +23,30 @@ Full product spec: [`Project_Plan.md`](Project_Plan.md). Release history: [`CHAN
 ## Architecture
 
 ```txt
-Kalshi REST API
+Kalshi REST API (events, markets, taxonomy)
       ↓
 KalshiProvider (fetch + paginate + Zod validate)
       ↓
 Normalizer → NormalizedEvent / NormalizedMarket / NormalizedMarketSide
       ↓
-SyncService (upsert + focus tagging + sync_runs audit)
-      ↓
+┌──────────────────────────────┬───────────────────────────────────────┐
+│ TaxonomySyncService          │ SyncService                           │
+│ categories, tags, series     │ upsert + focus tagging + sync_runs    │
+│ (refreshed before market     │ (+ targeted Mentions discovery pass   │
+│  sync and via POST           │  on incremental runs)                 │
+│  /sync/taxonomy)             │                                       │
+└──────────────┬───────────────┴──────────────────┬────────────────────┘
+               ↓                                  ↓
 SQLite (Drizzle) — ./data/forecast-kit.db
       ↓
-┌─────────────┬──────────────┬──────────────┐
-│  Fastify    │  Ink CLI     │  Next.js UI  │
-│  /markets   │  sync, list  │  :3848       │
-│  /events    │  inspect     │  cards/sheet │
-└─────────────┴──────────────┴──────────────┘
+┌─────────────┬──────────────┬─────────────────────────────────────────┐
+│  Fastify    │  Ink CLI     │  Next.js UI (:3848)                     │
+│  :3847      │  sync, list  │  events-first explorer (/events default)  │
+│  /markets   │  events,     │  event detail + market cards + sheet    │
+│  /events    │  inspect     │  /api/* rewrites → Fastify (same-origin)│
+│  /taxonomy  │              │                                         │
+│  /admin     │              │                                         │
+└─────────────┴──────────────┴─────────────────────────────────────────┘
 ```
 
 **Rule:** Downstream code consumes **normalized** types from `@forecast-kit/core`, never raw Kalshi JSON (except `raw_json` columns for forward compatibility).
@@ -45,11 +54,10 @@ SQLite (Drizzle) — ./data/forecast-kit.db
 ### Package dependency flow
 
 ```txt
-apps/cli, apps/api, apps/ui  →  db (api only), providers/*  →  core
-apps/ui                     →  HTTP to apps/api only
-providers/kalshi    →  core
-providers/polymarket → core (fetch stub; registered in API)
-core/providers     → registry for kalshi + polymarket
+apps/cli, apps/api  →  db, providers/*  →  core
+apps/ui             →  HTTP via /api proxy to apps/api only (no db/providers)
+providers/kalshi, polymarket  →  core
+core/providers    →  registry for kalshi + polymarket
 ```
 
 ---
@@ -74,22 +82,32 @@ forecast-kit/
 │   ├── api/                  # Fastify HTTP server (port 3847)
 │   │   └── src/
 │   │       ├── index.ts      # buildApp(), startServer()
+│   │       ├── plugins/cors.ts
 │   │       └── routes/
 │   │           ├── health.ts
-│   │           ├── markets.ts    # /markets, /export, /events, /sync
-│   │           └── markets.spec.ts
+│   │           ├── markets.ts    # /markets, /events, /sync
+│   │           ├── taxonomy.ts   # /taxonomy, /taxonomy/tags, /taxonomy/series
+│   │           ├── admin.ts      # PATCH/PUT admin market edits
+│   │           └── *.spec.ts
 │   │
-│   └── cli/                  # Ink TUI + command router
+│   ├── cli/                  # Ink TUI + command router
+│   │   └── src/
+│   │       ├── index.tsx     # Entry; --no-ui for scripts/CI
+│   │       ├── args.ts       # Flag parsing, HELP_TEXT
+│   │       ├── commands/
+│   │       │   ├── index.ts  # Command router
+│   │       │   ├── sync.ts
+│   │       │   ├── list.ts   # list + inspect
+│   │       │   └── events.ts # events list + event detail
+│   │       └── ui/
+│   │           ├── App.tsx
+│   │           └── SyncApp.tsx
+│   │
+│   └── ui/                   # Next.js explorer (port 3848); see apps/ui/AGENTS.md
 │       └── src/
-│           ├── index.tsx     # Entry; --no-ui for scripts/CI
-│           ├── args.ts       # Flag parsing, HELP_TEXT
-│           ├── commands/
-│           │   ├── index.ts  # Command router
-│           │   ├── sync.ts
-│           │   └── list.ts   # list + inspect
-│           └── ui/
-│               ├── App.tsx
-│               └── SyncApp.tsx
+│           ├── app/          # /events, /events/[eventTicker], /markets → redirect
+│           ├── components/   # cards, sheet, filters, sync dialog
+│           └── lib/api.ts    # HTTP client (defaults to /api proxy)
 │
 └── packages/
     ├── core/                 # Domain types, config, focus rules, logger
@@ -105,23 +123,25 @@ forecast-kit/
     │       ├── export/       # marketExportV1Schema, buildMarketExport
     │       └── providers/    # ProviderRegistry
     │
-    ├── db/                   # Drizzle schema, repos, sync, query
+    ├── db/                   # Drizzle schema, repos, sync, query, taxonomy
     │   ├── migrations/
     │   │   ├── 0000_omniscient_kree.sql
-    │   │   └── 0001_add_market_stale.sql
+    │   │   ├── 0001_add_market_stale.sql
+    │   │   └── 0002_add_kalshi_taxonomy.sql
     │   └── src/
-    │       ├── schema/       # events, markets, market_sides, market_focus_tags, sync_runs
+    │       ├── schema/       # events, markets, sides, focus tags, sync_runs, taxonomy, sync_state
     │       ├── client.ts     # createDatabase (Bun SQLite runtime)
     │       ├── database-client.ts  # DatabaseClient type (no bun:sqlite import)
-    │       ├── repositories/ # Upsert repos + MarketFocusTagRepository
-    │       ├── sync/service.ts     # SyncService
+    │       ├── repositories/ # Upsert repos + taxonomy + MarketFocusTagRepository
+    │       ├── sync/service.ts     # SyncService (taxonomy refresh + mentions discovery)
+    │       ├── taxonomy/service.ts # TaxonomySyncService
     │       ├── query/index.ts      # MarketQueryService, EventQueryService
     │       ├── export/index.ts     # Agent export schema v1.0
     │       └── test-utils.ts       # In-memory DB for Vitest (better-sqlite3)
     │
     └── providers/
         ├── kalshi/
-        │   ├── fixtures/events-page.json
+        │   ├── fixtures/     # events-page, tags-by-categories, series-list
         │   └── src/
         │       ├── provider.ts     # KalshiProvider
         │       ├── client.ts       # HTTP + retry/backoff
@@ -145,6 +165,7 @@ Run all commands from the repo root with **Bun**.
 | `serve`       | `bun run apps/api/src/index.ts`                      | Start Fastify API on `127.0.0.1:3847`          |
 | `ui`          | `bun run serve & bun run ui:app`                     | API + explorer UI (`127.0.0.1:3847` + `:3848`) |
 | `ui:app`      | `bun run --filter @forecast-kit/ui dev`              | Next.js UI only (API must already be running)  |
+| `ui:build`    | `bun run --filter @forecast-kit/ui build`            | Production build of explorer UI                |
 | `dev:explore` | `bun run ui`                                         | Alias for `ui`                                 |
 | `sync:kalshi` | `bun run apps/cli/src/index.tsx sync kalshi --no-ui` | Non-interactive Kalshi sync                    |
 | `db:generate` | `drizzle-kit generate`                               | Generate migration from schema changes         |
@@ -219,7 +240,9 @@ Base URL: `http://127.0.0.1:3847`
 | `GET`   | `/markets/:ticker/export`           | Agent export JSON schema v1.0 (spread, mid, implied prob)                               |
 | `GET`   | `/events`                           | Same filters; `?includeMarkets=true`                                                    |
 | `GET`   | `/events/:eventTicker`              | Event + markets; `?includeMetrics=true` for comparison columns                          |
-| `GET`   | `/taxonomy`                         | Kalshi categories + tags from last taxonomy sync                                        |
+| `POST`  | `/events/:eventTicker/sync`         | Refresh one event and its markets from Kalshi                                           |
+| `GET`   | `/taxonomy`                         | Kalshi categories + tags from last taxonomy sync (lazy-syncs if empty)                  |
+| `GET`   | `/taxonomy/tags`                    | Tags for a category (`?category=`, `?provider=`)                                        |
 | `GET`   | `/taxonomy/series`                  | Browse synced series (`?category=`, `?limit=`)                                          |
 | `POST`  | `/sync`                             | Body: `{ provider, focus, exclude, maxPages, full }` → background sync                  |
 | `POST`  | `/sync/taxonomy`                    | Refresh Kalshi category/tag/series metadata (`{ full?: boolean }`)                      |
@@ -249,17 +272,21 @@ List endpoints paginate with opaque base64url cursors (market/event id).
 
 ### Tables
 
-| Table                     | Purpose                                                                         | Key constraints                                 |
-| ------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `events`                  | Kalshi events                                                                   | unique `(provider, event_ticker)`               |
-| `markets`                 | Normalized markets + pricing columns; `is_stale` after full sync                | unique `(provider, ticker)`                     |
-| `market_sides`            | YES/NO (or other) investable sides                                              | unique `(market_id, side)`                      |
-| `market_focus_tags`       | Derived focus labels per market                                                 | unique `(market_id, focus)`                     |
-| `market_focus_tags.focus` | One of: politics, weather, economics, technology, crypto, entertainment, sports |
-| `sync_runs`               | Sync audit trail                                                                | status: running \| success \| partial \| failed |
+| Table                     | Purpose                                                                                                | Key constraints                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `events`                  | Kalshi events                                                                                          | unique `(provider, event_ticker)`               |
+| `markets`                 | Normalized markets + pricing columns; `is_stale` after full sync                                       | unique `(provider, ticker)`                     |
+| `market_sides`            | YES/NO (or other) investable sides                                                                     | unique `(market_id, side)`                      |
+| `market_focus_tags`       | Derived focus labels per market                                                                        | unique `(market_id, focus)`                     |
+| `market_focus_tags.focus` | One of: politics, politicians, mentions, weather, economics, technology, crypto, entertainment, sports | enum in `FOCUS_VALUES`                          |
+| `sync_runs`               | Sync audit trail                                                                                       | status: running \| success \| partial \| failed |
+| `provider_categories`     | Kalshi categories from taxonomy sync                                                                   | unique `(provider, category)`                   |
+| `provider_category_tags`  | Tags per category from taxonomy sync                                                                   | unique `(provider, category, tag)`              |
+| `provider_series`         | Series metadata (category, tags) for focus derivation                                                  | unique `(provider, series_ticker)`              |
+| `sync_state`              | Key/value store (e.g. taxonomy sync timestamps)                                                        | primary key `key`                               |
 
 Schema source: `packages/db/src/schema/index.ts`  
-Migrations: `packages/db/migrations/0000_omniscient_kree.sql`, `0001_add_market_stale.sql`
+Migrations: `packages/db/migrations/0000_omniscient_kree.sql`, `0001_add_market_stale.sql`, `0002_add_kalshi_taxonomy.sql`
 
 ### Events vs markets
 
@@ -277,17 +304,19 @@ Example: event `KXNEXTDNCCHAIR-45` (“Who will be the next DNC Chair?”) has m
 
 ### Key modules
 
-| Module                     | Role                                                     |
-| -------------------------- | -------------------------------------------------------- |
-| `createDatabase(path)`     | Open/create SQLite with WAL                              |
-| `createRepositories(db)`   | Event, Market, MarketSide, MarketFocusTag, SyncRun repos |
-| `createSyncService(repos)` | Orchestrate provider → DB; focus filter on sync          |
-| `createQueryServices(db)`  | `markets`, `events`, `syncRuns` query services           |
+| Module                                       | Role                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| `createDatabase(path)`                       | Open/create SQLite with WAL                                        |
+| `createRepositories(db)`                     | Event, Market, MarketSide, MarketFocusTag, SyncRun repos           |
+| `createSyncService(repos, taxonomy)`         | Orchestrate provider → DB; taxonomy refresh + focus filter on sync |
+| `createTaxonomySyncService(repos, provider)` | Sync Kalshi categories, tags, and series metadata                  |
+| `createQueryServices(db)`                    | `markets`, `events`, `syncRuns` query services                     |
 
 **Subpath exports** (avoid pulling `bun:sqlite` in Vitest):
 
 - `@forecast-kit/db/query`
 - `@forecast-kit/db/repositories`
+- `@forecast-kit/db/taxonomy`
 - `@forecast-kit/db/export`
 - `@forecast-kit/db/test-utils`
 
@@ -295,13 +324,14 @@ Example: event `KXNEXTDNCCHAIR-45` (“Who will be the next DNC Chair?”) has m
 
 ## Focus tagging
 
-Rules live in `packages/core/src/focus/rules.json` (category, series prefix, keywords).
+Rules live in `packages/core/src/focus/rules.json` (Kalshi categories/tags, series prefix, keywords).
 
 - **Sync:** `--focus` / `--exclude` filter which markets are persisted (tags always derived first).
-- **Query:** Same filters via CLI flags or API query params (OR for focus, then exclude).
+- **Query:** Same filters via CLI flags or API query params (OR for focus, then exclude). Also `?category=` and `?tag=` from synced taxonomy.
 - **Functions:** `deriveFocusTags()`, `matchesFocusFilter()`, `shouldPersistMarket()` in `@forecast-kit/core`.
+- **Taxonomy-aware:** Focus derivation uses synced series metadata (`provider_series.category`, `tags_json`) when available; falls back to market fields.
 
-Edit `rules.json` to tune classification without schema migrations. Keyword matching is substring-based (e.g. keyword `AI` can false-positive on words like “Chair”).
+Edit `rules.json` to tune classification without schema migrations. Keyword matching uses word boundaries (e.g. `AI` no longer matches “Chair”).
 
 ---
 
@@ -325,16 +355,19 @@ Kalshi uses public endpoints (no API keys required for MVP sync). Optional auth 
 
 ## Configuration (`.env`)
 
-| Variable                  | Default                                        | Purpose                          |
-| ------------------------- | ---------------------------------------------- | -------------------------------- |
-| `FORECAST_KIT_DB_PATH`    | `./data/forecast-kit.db`                       | SQLite file                      |
-| `FORECAST_KIT_API_HOST`   | `127.0.0.1`                                    | API bind host                    |
-| `FORECAST_KIT_API_PORT`   | `3847`                                         | API bind port                    |
-| `KALSHI_API_BASE_URL`     | `https://external-api.kalshi.com/trade-api/v2` | Kalshi REST base                 |
-| `KALSHI_API_KEY_ID`       | —                                              | Optional auth                    |
-| `KALSHI_PRIVATE_KEY_PATH` | —                                              | Optional PEM for RSA-PSS         |
-| `SYNC_PAGE_LIMIT`         | `200`                                          | Max records per Kalshi page      |
-| `SYNC_REQUEST_DELAY_MS`   | `100`                                          | Delay between paginated requests |
+| Variable                           | Default                                        | Purpose                                     |
+| ---------------------------------- | ---------------------------------------------- | ------------------------------------------- |
+| `FORECAST_KIT_DB_PATH`             | `./data/forecast-kit.db`                       | SQLite file                                 |
+| `FORECAST_KIT_API_HOST`            | `127.0.0.1`                                    | API bind host                               |
+| `FORECAST_KIT_API_PORT`            | `3847`                                         | API bind port                               |
+| `FORECAST_KIT_UI_PORT`             | `3848`                                         | Explorer UI port (Next.js dev)              |
+| `FORECAST_KIT_API_URL`             | `http://127.0.0.1:3847`                        | Next.js `/api` rewrite target (server-side) |
+| `NEXT_PUBLIC_FORECAST_KIT_API_URL` | — (uses `/api` proxy)                          | Optional direct API URL (requires CORS)     |
+| `KALSHI_API_BASE_URL`              | `https://external-api.kalshi.com/trade-api/v2` | Kalshi REST base                            |
+| `KALSHI_API_KEY_ID`                | —                                              | Optional auth                               |
+| `KALSHI_PRIVATE_KEY_PATH`          | —                                              | Optional PEM for RSA-PSS                    |
+| `SYNC_PAGE_LIMIT`                  | `200`                                          | Max records per Kalshi page                 |
+| `SYNC_REQUEST_DELAY_MS`            | `100`                                          | Delay between paginated requests            |
 
 Load via `loadConfig()` from `@forecast-kit/core`.
 
@@ -384,19 +417,20 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 ## Quick reference: where to change things
 
-| Task                 | Location                                                            |
-| -------------------- | ------------------------------------------------------------------- |
-| Add env var          | `packages/core/src/config/index.ts`, `.env.example`                 |
-| Change DB schema     | `packages/db/src/schema/index.ts` → `db:generate` → `db:migrate`    |
-| Kalshi field mapping | `packages/providers/kalshi/src/normalizer.ts`, `schemas.ts`         |
-| Focus rules          | `packages/core/src/focus/rules.json`                                |
-| Sync behavior        | `packages/db/src/sync/service.ts`                                   |
-| List/filter queries  | `packages/db/src/query/index.ts`                                    |
-| API routes           | `apps/api/src/routes/markets.ts`                                    |
-| CLI commands         | `apps/cli/src/commands/`                                            |
-| Explorer UI          | `apps/ui/` (see `apps/ui/AGENTS.md`)                                |
-| Agent export         | `packages/db/src/export/index.ts`, `apps/api/src/routes/markets.ts` |
-| Provider registry    | `packages/core/src/providers/registry.ts`                           |
+| Task                 | Location                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| Add env var          | `packages/core/src/config/index.ts`, `.env.example`                      |
+| Change DB schema     | `packages/db/src/schema/index.ts` → `db:generate` → `db:migrate`         |
+| Kalshi field mapping | `packages/providers/kalshi/src/normalizer.ts`, `schemas.ts`              |
+| Focus rules          | `packages/core/src/focus/rules.json`                                     |
+| Sync behavior        | `packages/db/src/sync/service.ts`                                        |
+| Taxonomy sync        | `packages/db/src/taxonomy/service.ts`, `apps/api/src/routes/taxonomy.ts` |
+| List/filter queries  | `packages/db/src/query/index.ts`                                         |
+| API routes           | `apps/api/src/routes/markets.ts`                                         |
+| CLI commands         | `apps/cli/src/commands/`                                                 |
+| Explorer UI          | `apps/ui/` (see `apps/ui/AGENTS.md`)                                     |
+| Agent export         | `packages/db/src/export/index.ts`, `apps/api/src/routes/markets.ts`      |
+| Provider registry    | `packages/core/src/providers/registry.ts`                                |
 
 ---
 
