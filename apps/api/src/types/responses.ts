@@ -1,5 +1,5 @@
-import type { MarketExportV1 } from '@forcast-kit/core';
-import type { MarketComparisonRow, MarketDetail, MarketSummary, SyncRunRow } from '@forcast-kit/db/query';
+import type { MarketExportV1 } from '@forecast-kit/core';
+import type { MarketComparisonRow, MarketDetail, MarketSummary, SyncRunRow } from '@forecast-kit/db/query';
 
 export type { MarketComparisonRow, MarketDetail, MarketSummary, SyncRunRow };
 

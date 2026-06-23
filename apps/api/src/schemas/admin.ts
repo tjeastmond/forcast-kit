@@ -1,4 +1,4 @@
-import { FOCUS_VALUES } from '@forcast-kit/core';
+import { FOCUS_VALUES } from '@forecast-kit/core';
 import { z } from 'zod';
 
 export const marketPartialUpdateSchema = z.object({

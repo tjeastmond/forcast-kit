@@ -1,5 +1,5 @@
 {
-  "name": "@forcast-kit/api",
+  "name": "@forecast-kit/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,10 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@forcast-kit/core": "workspace:*",
-    "@forcast-kit/db": "workspace:*",
-    "@forcast-kit/provider-kalshi": "workspace:*",
-    "@forcast-kit/provider-polymarket": "workspace:*",
+    "@forecast-kit/core": "workspace:*",
+    "@forecast-kit/db": "workspace:*",
+    "@forecast-kit/provider-kalshi": "workspace:*",
+    "@forecast-kit/provider-polymarket": "workspace:*",
     "fastify": "^5.3.3",
     "@fastify/cors": "^11.0.1",
     "zod": "^3.25.36"

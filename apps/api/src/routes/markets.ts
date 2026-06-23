@@ -1,6 +1,6 @@
-import type { Focus, ProviderId } from '@forcast-kit/core';
-import { deriveMarketMetrics, parseFocusList } from '@forcast-kit/core';
-import { marketDetailToExport } from '@forcast-kit/db/export';
+import type { Focus, ProviderId } from '@forecast-kit/core';
+import { deriveMarketMetrics, parseFocusList } from '@forecast-kit/core';
+import { marketDetailToExport } from '@forecast-kit/db/export';
 import type { FastifyPluginCallback } from 'fastify';
 
 function parseLimit(value: string | undefined): number | undefined {
@@ -25,6 +25,8 @@ function parseMarketQuery(query: Record<string, unknown>) {
   return {
     focus: parseFocusList(typeof query['focus'] === 'string' ? query['focus'] : undefined),
     exclude: parseFocusList(typeof query['exclude'] === 'string' ? query['exclude'] : undefined),
+    category: typeof query['category'] === 'string' ? query['category'] : undefined,
+    tag: typeof query['tag'] === 'string' ? query['tag'] : undefined,
     status: typeof query['status'] === 'string' ? query['status'] : undefined,
     stale: parseBoolean(query['stale']),
     q: typeof query['q'] === 'string' ? query['q'] : undefined,
@@ -40,6 +42,8 @@ export const marketRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const result = await app.query.markets.listMarkets({
       ...(query.focus.length > 0 ? { focus: query.focus } : {}),
       ...(query.exclude.length > 0 ? { exclude: query.exclude } : {}),
+      ...(query.category !== undefined ? { category: query.category } : {}),
+      ...(query.tag !== undefined ? { tag: query.tag } : {}),
       ...(query.status !== undefined ? { status: query.status } : {}),
       ...(query.stale !== undefined ? { stale: query.stale } : {}),
       ...(query.q !== undefined ? { q: query.q } : {}),
@@ -96,6 +100,8 @@ export const eventRoutes: FastifyPluginCallback = (app, _opts, done) => {
     return app.query.events.listEvents({
       ...(marketQuery.focus.length > 0 ? { focus: marketQuery.focus } : {}),
       ...(marketQuery.exclude.length > 0 ? { exclude: marketQuery.exclude } : {}),
+      ...(marketQuery.category !== undefined ? { category: marketQuery.category } : {}),
+      ...(marketQuery.tag !== undefined ? { tag: marketQuery.tag } : {}),
       ...(marketQuery.status !== undefined ? { status: marketQuery.status } : {}),
       ...(marketQuery.stale !== undefined ? { stale: marketQuery.stale } : {}),
       ...(marketQuery.q !== undefined ? { q: marketQuery.q } : {}),
@@ -142,6 +148,15 @@ interface SyncBody {
 }
 
 export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
+  app.post('/sync/taxonomy', async (request) => {
+    const body = (request.body ?? {}) as { full?: boolean };
+    const result = await app.sync.syncTaxonomy({ ...(body.full === true ? { full: true } : {}) });
+    if (!result) {
+      return { status: 'skipped', reason: 'taxonomy sync not configured' };
+    }
+    return { status: 'success', ...result };
+  });
+
   app.post('/sync', async (request) => {
     const body = (request.body ?? {}) as SyncBody;
     const providerId = (body.provider ?? 'kalshi') as ProviderId;

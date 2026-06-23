@@ -1,4 +1,4 @@
-import { checkDatabaseConnection } from '@forcast-kit/db';
+import { checkDatabaseConnection } from '@forecast-kit/db';
 import type { FastifyPluginCallback } from 'fastify';
 
 export const healthRoutes: FastifyPluginCallback = (app, _opts, done) => {

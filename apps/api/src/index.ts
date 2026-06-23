@@ -1,27 +1,30 @@
-import { loadConfig, logger, createProviderRegistry } from '@forcast-kit/core';
-import type { DatabaseClient } from '@forcast-kit/db';
+import { loadConfig, logger, createProviderRegistry } from '@forecast-kit/core';
+import type { DatabaseClient } from '@forecast-kit/db';
 import {
   checkDatabaseConnection,
   createDatabase,
   createQueryServices,
   createRepositories,
   createSyncService,
-} from '@forcast-kit/db';
-import { KalshiProvider } from '@forcast-kit/provider-kalshi';
-import { PolymarketProvider } from '@forcast-kit/provider-polymarket';
+  createTaxonomySyncService,
+} from '@forecast-kit/db';
+import { KalshiProvider } from '@forecast-kit/provider-kalshi';
+import { PolymarketProvider } from '@forecast-kit/provider-polymarket';
 import Fastify from 'fastify';
 import { adminRoutes } from './routes/admin.js';
 import { eventRoutes, marketRoutes, syncRoutes } from './routes/markets.js';
 import { healthRoutes } from './routes/health.js';
+import { taxonomyRoutes } from './routes/taxonomy.js';
 import { corsPlugin } from './plugins/cors.js';
 
 export async function buildApp(options?: { db?: DatabaseClient }) {
   const config = loadConfig();
-  const db = options?.db ?? createDatabase(config.FORCAST_KIT_DB_PATH);
+  const db = options?.db ?? createDatabase(config.FORECAST_KIT_DB_PATH);
   const repos = createRepositories(db);
   const query = createQueryServices(db);
-  const sync = createSyncService(repos);
   const kalshiProvider = new KalshiProvider(config);
+  const taxonomy = createTaxonomySyncService(repos, kalshiProvider);
+  const sync = createSyncService(repos, taxonomy);
   const providers = createProviderRegistry([kalshiProvider, new PolymarketProvider()]);
 
   const app = Fastify({ logger: false });
@@ -31,6 +34,7 @@ export async function buildApp(options?: { db?: DatabaseClient }) {
   app.decorate('repos', repos);
   app.decorate('query', query);
   app.decorate('sync', sync);
+  app.decorate('taxonomy', taxonomy);
   app.decorate('providers', providers);
   app.decorate('kalshiProvider', kalshiProvider);
 
@@ -39,6 +43,7 @@ export async function buildApp(options?: { db?: DatabaseClient }) {
   await app.register(marketRoutes);
   await app.register(eventRoutes);
   await app.register(syncRoutes);
+  await app.register(taxonomyRoutes);
   await app.register(adminRoutes);
 
   return app;
@@ -54,15 +59,15 @@ export async function startServer() {
   }
 
   await app.listen({
-    host: config.FORCAST_KIT_API_HOST,
-    port: config.FORCAST_KIT_API_PORT,
+    host: config.FORECAST_KIT_API_HOST,
+    port: config.FORECAST_KIT_API_PORT,
   });
 
   logger.info({
     component: 'api',
     msg: 'server listening',
-    host: config.FORCAST_KIT_API_HOST,
-    port: config.FORCAST_KIT_API_PORT,
+    host: config.FORECAST_KIT_API_HOST,
+    port: config.FORECAST_KIT_API_PORT,
   });
 }
 
@@ -73,6 +78,7 @@ declare module 'fastify' {
     repos: ReturnType<typeof createRepositories>;
     query: ReturnType<typeof createQueryServices>;
     sync: ReturnType<typeof createSyncService>;
+    taxonomy: ReturnType<typeof createTaxonomySyncService>;
     providers: ReturnType<typeof createProviderRegistry>;
     kalshiProvider: KalshiProvider;
   }
