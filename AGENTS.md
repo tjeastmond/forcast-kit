@@ -462,6 +462,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 - Mirror **applied.dev** visual/UX patterns (card lists, filters, detail sheets) when building or extending `apps/ui`.
 - Keep Kalshi/API-sourced market and event titles in original casing; do not title-case card or sheet titles (breaks acronyms like BTC).
 - When landing multi-topic work, split into **logical commits** by layer (provider, db, api, cli, ui, docs) rather than one monolithic commit.
+- When adding testable UI logic, extract pure helpers and cover with Vitest `*.spec.ts` specs; this repo has no React component test harness.
 
 ---
 
@@ -469,6 +470,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 
 - Repo bootstrapped at `/Users/tjeastmond/Projects/forecast-kit` with `Project_Plan.md` copied from sibling `forecastkit.dev`.
 - GitHub repository is `tjeastmond/forecast-kit` (renamed from `forcast-kit`).
-- GitHub Actions CI (`.github/workflows/ci.yml`) runs `format:check`, `typecheck`, `lint`, and `test` on push/PR to `main`, plus a separate **Build** job that runs `format:check`, `lint`, and `bun run build`.
+- Root `bun run build` runs `tsc --build` (CLI, API, packages) then `ui:build` for the explorer — not UI-only.
+- GitHub Actions CI (`.github/workflows/ci.yml`) runs `format:check`, `typecheck`, `lint`, and `test` on push/PR to `main`, plus a separate **Build** job that runs `format:check`, `lint`, and `bun run build`; docs-only PRs are not exempt, and independent docs PRs against broken `main` may fail on unrelated errors — stack on fix branches first.
 - Post-MVP polish is complete; `.ai/handoff-remaining.md` lists done items and explicit out-of-scope work; track bugs in `.ai/issues.md`.
 - Sibling design reference **applied.dev** lives at `/Users/tjeastmond/Projects/applied.dev` (Next.js 15, shadcn, card-based list UI).
