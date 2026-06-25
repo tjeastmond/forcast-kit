@@ -28,6 +28,32 @@ export function formatDate(value: string | null | undefined): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+export function formatDollars(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return value.toLocaleString(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function formatContracts(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+export function formatReturnPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 export function formatSpread(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return '—';

@@ -4,6 +4,7 @@ import { type MarketExportV1 } from '@/lib/constants';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CopyIdRow } from '@/components/CopyIdRow';
+import { TestPurchaseTracker } from '@/components/TestPurchaseTracker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { fetchMarketDetail, fetchMarketExport, getMarketExportUrl, type MarketDetail } from '@/lib/api';
@@ -128,6 +129,8 @@ export function MarketDetailSheet({
 
   useEffect(() => {
     if (open && ticker) {
+      setDetail(null);
+      setExportData(null);
       void load(ticker);
     }
   }, [open, ticker, load]);
@@ -181,6 +184,10 @@ export function MarketDetailSheet({
               </section>
 
               <TimingLiquiditySection detail={detail} />
+
+              {ticker && detail.ticker === ticker ? (
+                <TestPurchaseTracker detail={detail} expectedTicker={ticker} />
+              ) : null}
 
               <section>
                 <h3 className="mb-2 font-medium">Sides</h3>
