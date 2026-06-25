@@ -31,4 +31,20 @@ describe('eventsListCache', () => {
     clearEventsListCache();
     expect(eventsListCacheSize()).toBe(0);
   });
+
+  it('evicts oldest entry when cache exceeds max size', () => {
+    clearEventsListCache();
+
+    for (let index = 0; index < 51; index += 1) {
+      setEventsListCache(`key-${String(index)}`, {
+        events: [],
+        nextCursor: null,
+        cursorStack: [null],
+      });
+    }
+
+    expect(eventsListCacheSize()).toBe(50);
+    expect(getEventsListCache('key-0')).toBeUndefined();
+    expect(getEventsListCache('key-50')?.cursorStack).toEqual([null]);
+  });
 });

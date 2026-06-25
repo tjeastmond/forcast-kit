@@ -356,3 +356,30 @@ These are noted for completeness; none are blockers for local use.
 | **Low**    | Fix double-fetch in `PUT /focus-tags`              | `api/src/routes/admin.ts`                  |
 | **Low**    | Consolidate conditional spread pattern with helper | Throughout sync/query/routes               |
 | **Low**    | Plan dedup of `FOCUS_VALUES` / `MarketExportV1`    | `core`, `ui/src/lib/constants.ts`          |
+
+---
+
+## Task List
+
+- [x] **1a** — Extract `parseLimit` to `apps/api/src/utils.ts`; import in `markets.ts` and `taxonomy.ts`
+- [x] **1b** — Deduplicate `TaxonomySeriesRow` (single source in taxonomy contract or `@forecast-kit/core`)
+- [x] **1c** — Extract `parseTagsJson` helper in `TaxonomyRepository` (`repositories/index.ts`)
+- [x] **1d** — Add `pickDefined` helper; replace conditional spread pattern across sync/query/routes/admin
+- [x] **1e** — Extract `@forecast-kit/types` (zero-deps) for `FOCUS_VALUES` / `MarketExportV1`; update UI imports
+- [x] **2a** — Have `loadSeriesMap` return `Map<string, SeriesMetadata>`; remove no-op `loadSeriesMetadataMap` loop
+- [x] **2b** — Remove redundant `sports` special-case branch in `focus/rules.ts`
+- [x] **2c** — Fix `MarketRepository.updatePartial` to UPDATE by ticker with RETURNING (drop extra SELECT)
+- [x] **2d** — Reuse single `MarketQueryService` instance in `EventQueryService.listEvents`
+- [x] **2e** — Fix admin `PUT /focus-tags` double `getMarketByTicker` fetch
+- [x] **3a** — Pre-compile keyword RegExp patterns at module load in `focus/rules.ts`
+- [x] **3b** — Batch-fetch markets for `listEvents` with `includeMarkets` (fix N+1)
+- [x] **3c** — Batch `TaxonomyRepository.upsertSeries` into one insert statement
+- [x] **3d** — Module-level promise cache for taxonomy in `MarketFilters.tsx`
+- [x] **3e** — Module-level cache for market detail/export in `MarketDetailSheet.tsx`
+- [x] **3f** — Cap `eventsListCache` size (FIFO, e.g. max 50)
+- [x] **3g** — Add jitter to Kalshi client exponential backoff
+- [x] **4a** — Remove unused `setCursorStack` from `useEventListParams` return
+- [x] **4b** — Enable `PRAGMA foreign_keys = ON` in `createDatabase`
+- [x] **4c** — Wrap `SyncAdminDialog.handleSync` in `useCallback`
+- [x] **4d** — Document Kalshi-specific `'active'` on `MarketStatus` (comment in core types)
+- [x] **4e** — Resolve redundant Zod parse in `buildMarketExport` (remove or document defense-in-depth)

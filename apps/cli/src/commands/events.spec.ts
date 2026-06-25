@@ -94,7 +94,7 @@ describe('CLI events parity with query layer', () => {
     await repos.marketFocusTags.replaceTags(sportsId, deriveFocusTags(sportsMarket));
 
     const { events } = await query.events.listEvents({ focus: ['politics'], limit: 50 });
-    const queryTickers = events.map((event) => String(event['eventTicker']));
+    const queryTickers = events.map((event) => event.eventTicker);
 
     const cliResult = await listEventsWithQuery(query, parseArgs(['events', '--focus', 'politics']));
     expect(cliResult.exitCode).toBe(0);

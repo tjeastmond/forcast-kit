@@ -8,8 +8,9 @@ import type {
   ProviderEventBatch,
   ProviderMarket,
 } from '@forecast-kit/core';
+import type { TaxonomySeriesRow } from '@forecast-kit/db/taxonomy';
 import { logger } from '@forecast-kit/core';
-import { KalshiClient, type TaxonomySeriesRow } from './client.js';
+import { KalshiClient } from './client.js';
 import { normalizeEventWithMarkets, normalizeMarket, deriveBinarySides } from './normalizer.js';
 import { kalshiEventSchema, kalshiMarketSchema, type KalshiTagsByCategoriesResponse } from './schemas.js';
 

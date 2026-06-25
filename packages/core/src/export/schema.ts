@@ -1,6 +1,7 @@
+import { MARKET_EXPORT_SCHEMA_VERSION, type MarketExportV1 } from '@forecast-kit/types';
 import { z } from 'zod';
 
-export const MARKET_EXPORT_SCHEMA_VERSION = '1.0' as const;
+export { MARKET_EXPORT_SCHEMA_VERSION, type MarketExportV1 };
 
 const pricingSchema = z.object({
   yesBid: z.number().nullable(),
@@ -47,5 +48,3 @@ export const marketExportV1Schema = z.object({
   rules: rulesSchema,
   event: eventSchema.nullable(),
 });
-
-export type MarketExportV1 = z.infer<typeof marketExportV1Schema>;

@@ -5,7 +5,7 @@ import type {
   SeriesMetadata,
   SyncRunStatus,
 } from '@forecast-kit/core';
-import { deriveFocusTags, logger, shouldPersistMarket, type FocusFilterOptions } from '@forecast-kit/core';
+import { deriveFocusTags, logger, pickDefined, shouldPersistMarket, type FocusFilterOptions } from '@forecast-kit/core';
 import type { Repositories } from '../repositories/index.js';
 import type { TaxonomySyncService, TaxonomySyncResult } from '../taxonomy/service.js';
 
@@ -196,9 +196,9 @@ export class SyncService {
     if (!this.taxonomy) {
       return null;
     }
-    const result = await this.taxonomy.syncKalshiTaxonomy({
-      ...(options?.full === true ? { full: true } : {}),
-    });
+    const result = await this.taxonomy.syncKalshiTaxonomy(
+      pickDefined({ full: options?.full === true ? true : undefined }),
+    );
     this.seriesMetadataMap = await this.taxonomy.loadSeriesMetadataMap();
     return result;
   }
@@ -236,28 +236,30 @@ export class SyncService {
       }
     }
 
-    const resolvedOptions: SyncOptions = {
-      ...(options?.focus !== undefined ? { focus: options.focus } : {}),
-      ...(options?.exclude !== undefined ? { exclude: options.exclude } : {}),
-      ...(options?.status !== undefined ? { status: options.status } : {}),
-      ...(options?.maxPages !== undefined ? { maxPages: options.maxPages } : {}),
-      ...(options?.full === true ? { full: true } : {}),
-      ...(resolvedMinUpdatedTs !== undefined ? { minUpdatedTs: resolvedMinUpdatedTs } : {}),
-    };
+    const resolvedOptions: SyncOptions = pickDefined({
+      focus: options?.focus,
+      exclude: options?.exclude,
+      status: options?.status,
+      maxPages: options?.maxPages,
+      full: options?.full === true ? true : undefined,
+      minUpdatedTs: resolvedMinUpdatedTs,
+    });
 
-    const filterOptions: FocusFilterOptions = {
-      ...(resolvedOptions.focus !== undefined ? { focus: resolvedOptions.focus } : {}),
-      ...(resolvedOptions.exclude !== undefined ? { exclude: resolvedOptions.exclude } : {}),
-    };
+    const filterOptions: FocusFilterOptions = pickDefined({
+      focus: resolvedOptions.focus,
+      exclude: resolvedOptions.exclude,
+    });
 
     try {
       await this.refreshTaxonomyIfAvailable();
 
-      for await (const batch of provider.fetchOpenEvents({
-        status: resolvedOptions.status ?? 'open',
-        ...(resolvedOptions.minUpdatedTs !== undefined ? { minUpdatedTs: resolvedOptions.minUpdatedTs } : {}),
-        ...(resolvedOptions.maxPages !== undefined ? { maxPages: resolvedOptions.maxPages } : {}),
-      })) {
+      for await (const batch of provider.fetchOpenEvents(
+        pickDefined({
+          status: resolvedOptions.status ?? 'open',
+          minUpdatedTs: resolvedOptions.minUpdatedTs,
+          maxPages: resolvedOptions.maxPages,
+        }),
+      )) {
         await this.upsertBatch(batch, filterOptions, { skipFocusFilter: false }, state);
       }
 
@@ -354,7 +356,7 @@ export class SyncService {
 
       for (const market of eventMarkets) {
         const seriesMetadata = this.resolveSeriesMetadata(market.seriesTicker);
-        const focusTags = deriveFocusTags(market, { ...(seriesMetadata ? { seriesMetadata } : {}) });
+        const focusTags = deriveFocusTags(market, pickDefined({ seriesMetadata }));
         if (!options.skipFocusFilter && !shouldPersistMarket(market, focusTags, filterOptions)) {
           continue;
         }

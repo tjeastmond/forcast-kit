@@ -36,7 +36,6 @@ export function useEventListParams(): {
   goNext: (nextCursor: string) => void;
   goPrev: () => void;
   clearAll: () => void;
-  setCursorStack: (stack: (string | null)[]) => void;
 } {
   const router = useRouter();
   const pathname = usePathname();
@@ -137,6 +136,5 @@ export function useEventListParams(): {
     goNext,
     goPrev,
     clearAll,
-    setCursorStack,
   };
 }

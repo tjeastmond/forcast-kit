@@ -1,3 +1,4 @@
+import { pickDefined } from '@forecast-kit/core';
 import type { FastifyPluginCallback } from 'fastify';
 import { focusTagsUpdateSchema, marketPartialUpdateSchema } from '../schemas/admin.js';
 
@@ -11,17 +12,20 @@ export const adminRoutes: FastifyPluginCallback = (app, _opts, done) => {
     }
 
     const body = parsed.data;
-    const marketId = await app.repos.markets.updatePartial(ticker, {
-      ...(body.title !== undefined ? { title: body.title } : {}),
-      ...(body.subtitle !== undefined ? { subtitle: body.subtitle } : {}),
-      ...(body.status !== undefined ? { status: body.status } : {}),
-      ...(body.yesBid !== undefined ? { yesBid: body.yesBid } : {}),
-      ...(body.yesAsk !== undefined ? { yesAsk: body.yesAsk } : {}),
-      ...(body.noBid !== undefined ? { noBid: body.noBid } : {}),
-      ...(body.noAsk !== undefined ? { noAsk: body.noAsk } : {}),
-      ...(body.lastPrice !== undefined ? { lastPrice: body.lastPrice } : {}),
-      ...(body.isStale !== undefined ? { isStale: body.isStale } : {}),
-    });
+    const marketId = await app.repos.markets.updatePartial(
+      ticker,
+      pickDefined({
+        title: body.title,
+        subtitle: body.subtitle,
+        status: body.status,
+        yesBid: body.yesBid,
+        yesAsk: body.yesAsk,
+        noBid: body.noBid,
+        noAsk: body.noAsk,
+        lastPrice: body.lastPrice,
+        isStale: body.isStale,
+      }),
+    );
     if (marketId === null) {
       reply.code(404);
       return { error: 'Market not found' };
@@ -44,13 +48,13 @@ export const adminRoutes: FastifyPluginCallback = (app, _opts, done) => {
       return { error: 'Invalid request body', details: parsed.error.flatten() };
     }
 
-    const market = await app.query.markets.getMarketByTicker(ticker);
-    if (!market) {
+    const marketId = await app.repos.markets.getIdByTicker(ticker);
+    if (marketId === null) {
       reply.code(404);
       return { error: 'Market not found' };
     }
 
-    await app.repos.marketFocusTags.replaceTags(market.id, parsed.data.focusTags);
+    await app.repos.marketFocusTags.replaceTags(marketId, parsed.data.focusTags);
 
     const updated = await app.query.markets.getMarketByTicker(ticker);
     if (!updated) {

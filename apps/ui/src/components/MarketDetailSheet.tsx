@@ -10,6 +10,25 @@ import { fetchMarketDetail, fetchMarketExport, getMarketExportUrl, type MarketDe
 import { copyId } from '@/lib/copy-id';
 import { formatDate, formatNumber, formatPrice, formatRawJsonForDisplay, formatSpread } from '@/lib/format';
 
+interface CachedMarketDetail {
+  readonly detail: MarketDetail;
+  readonly exportData: MarketExportV1;
+}
+
+const marketDetailCache = new Map<string, CachedMarketDetail>();
+
+async function loadMarketDetailCached(marketTicker: string): Promise<CachedMarketDetail> {
+  const cached = marketDetailCache.get(marketTicker);
+  if (cached) {
+    return cached;
+  }
+
+  const [detail, exportData] = await Promise.all([fetchMarketDetail(marketTicker), fetchMarketExport(marketTicker)]);
+  const entry = { detail, exportData };
+  marketDetailCache.set(marketTicker, entry);
+  return entry;
+}
+
 function ExportPreview({
   exportData,
   eventTicker,
@@ -97,12 +116,9 @@ export function MarketDetailSheet({
   const load = useCallback(async (marketTicker: string) => {
     setLoading(true);
     try {
-      const [market, exportJson] = await Promise.all([
-        fetchMarketDetail(marketTicker),
-        fetchMarketExport(marketTicker),
-      ]);
-      setDetail(market);
-      setExportData(exportJson);
+      const { detail, exportData } = await loadMarketDetailCached(marketTicker);
+      setDetail(detail);
+      setExportData(exportData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to load market');
     } finally {

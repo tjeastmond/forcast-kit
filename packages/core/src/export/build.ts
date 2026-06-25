@@ -65,5 +65,6 @@ export function buildMarketExport(input: MarketExportInput): MarketExportV1 {
     event: input.event,
   } satisfies MarketExportV1;
 
+  // Runtime parse validates export shape at API boundary (defense-in-depth after `satisfies`).
   return marketExportV1Schema.parse(doc);
 }

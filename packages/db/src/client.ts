@@ -9,6 +9,7 @@ export type { DatabaseClient } from './database-client.js';
 export function createDatabase(dbPath: string): DatabaseClient {
   const sqlite = new Database(dbPath, { create: true });
   sqlite.run('PRAGMA journal_mode = WAL;');
+  sqlite.run('PRAGMA foreign_keys = ON;');
   return drizzle(sqlite, { schema });
 }
 

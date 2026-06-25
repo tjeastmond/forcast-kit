@@ -1,15 +1,8 @@
 import type { Focus, ProviderId } from '@forecast-kit/core';
-import { deriveMarketMetrics, parseFocusList } from '@forecast-kit/core';
+import { deriveMarketMetrics, parseFocusList, pickDefined } from '@forecast-kit/core';
 import { marketDetailToExport } from '@forecast-kit/db/export';
 import type { FastifyPluginCallback } from 'fastify';
-
-function parseLimit(value: string | undefined): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
+import { parseLimit } from '../utils.js';
 
 function parseBoolean(value: unknown): boolean | undefined {
   if (value === 'true' || value === true) {
@@ -36,20 +29,24 @@ function parseMarketQuery(query: Record<string, unknown>) {
   };
 }
 
+function toMarketListFilters(query: ReturnType<typeof parseMarketQuery>) {
+  return pickDefined({
+    focus: query.focus.length > 0 ? query.focus : undefined,
+    exclude: query.exclude.length > 0 ? query.exclude : undefined,
+    category: query.category,
+    tag: query.tag,
+    status: query.status,
+    stale: query.stale,
+    q: query.q,
+    limit: query.limit,
+    cursor: query.cursor,
+  });
+}
+
 export const marketRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.get('/markets', async (request) => {
     const query = parseMarketQuery(request.query as Record<string, unknown>);
-    const result = await app.query.markets.listMarkets({
-      ...(query.focus.length > 0 ? { focus: query.focus } : {}),
-      ...(query.exclude.length > 0 ? { exclude: query.exclude } : {}),
-      ...(query.category !== undefined ? { category: query.category } : {}),
-      ...(query.tag !== undefined ? { tag: query.tag } : {}),
-      ...(query.status !== undefined ? { status: query.status } : {}),
-      ...(query.stale !== undefined ? { stale: query.stale } : {}),
-      ...(query.q !== undefined ? { q: query.q } : {}),
-      ...(query.limit !== undefined ? { limit: query.limit } : {}),
-      ...(query.cursor !== undefined ? { cursor: query.cursor } : {}),
-    });
+    const result = await app.query.markets.listMarkets(toMarketListFilters(query));
     return result;
   });
 
@@ -98,15 +95,7 @@ export const eventRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const includeMarkets = query['includeMarkets'] === 'true' || query['includeMarkets'] === true;
 
     return app.query.events.listEvents({
-      ...(marketQuery.focus.length > 0 ? { focus: marketQuery.focus } : {}),
-      ...(marketQuery.exclude.length > 0 ? { exclude: marketQuery.exclude } : {}),
-      ...(marketQuery.category !== undefined ? { category: marketQuery.category } : {}),
-      ...(marketQuery.tag !== undefined ? { tag: marketQuery.tag } : {}),
-      ...(marketQuery.status !== undefined ? { status: marketQuery.status } : {}),
-      ...(marketQuery.stale !== undefined ? { stale: marketQuery.stale } : {}),
-      ...(marketQuery.q !== undefined ? { q: marketQuery.q } : {}),
-      ...(marketQuery.limit !== undefined ? { limit: marketQuery.limit } : {}),
-      ...(marketQuery.cursor !== undefined ? { cursor: marketQuery.cursor } : {}),
+      ...toMarketListFilters(marketQuery),
       includeMarkets,
     });
   });
@@ -114,11 +103,14 @@ export const eventRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.get('/events/:eventTicker', async (request, reply) => {
     const { eventTicker } = request.params as { eventTicker: string };
     const query = parseMarketQuery(request.query as Record<string, unknown>);
-    const event = await app.query.events.getEventByTicker(eventTicker, {
-      ...(query.focus.length > 0 ? { focus: query.focus } : {}),
-      ...(query.exclude.length > 0 ? { exclude: query.exclude } : {}),
-      ...(query.includeMetrics ? { includeMetrics: true } : {}),
-    });
+    const event = await app.query.events.getEventByTicker(
+      eventTicker,
+      pickDefined({
+        focus: query.focus.length > 0 ? query.focus : undefined,
+        exclude: query.exclude.length > 0 ? query.exclude : undefined,
+        includeMetrics: query.includeMetrics ? true : undefined,
+      }),
+    );
     if (!event) {
       reply.code(404);
       return { error: 'Event not found' };
@@ -150,7 +142,7 @@ interface SyncBody {
 export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.post('/sync/taxonomy', async (request) => {
     const body = (request.body ?? {}) as { full?: boolean };
-    const result = await app.sync.syncTaxonomy({ ...(body.full === true ? { full: true } : {}) });
+    const result = await app.sync.syncTaxonomy(pickDefined({ full: body.full === true ? true : undefined }));
     if (!result) {
       return { status: 'skipped', reason: 'taxonomy sync not configured' };
     }
@@ -162,12 +154,15 @@ export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const providerId = (body.provider ?? 'kalshi') as ProviderId;
     const provider = app.providers.require(providerId);
 
-    const { syncRunId } = await app.sync.startBackgroundSync(provider, {
-      ...(body.focus !== undefined ? { focus: body.focus } : {}),
-      ...(body.exclude !== undefined ? { exclude: body.exclude } : {}),
-      ...(body.maxPages !== undefined ? { maxPages: body.maxPages } : {}),
-      ...(body.full === true ? { full: true } : {}),
-    });
+    const { syncRunId } = await app.sync.startBackgroundSync(
+      provider,
+      pickDefined({
+        focus: body.focus,
+        exclude: body.exclude,
+        maxPages: body.maxPages,
+        full: body.full === true ? true : undefined,
+      }),
+    );
 
     return { syncRunId, status: 'running' };
   });
@@ -177,10 +172,7 @@ export const syncRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const limit = parseLimit(typeof query['limit'] === 'string' ? query['limit'] : undefined);
     const cursor = typeof query['cursor'] === 'string' ? query['cursor'] : undefined;
 
-    return app.query.syncRuns.listRuns({
-      ...(limit !== undefined ? { limit } : {}),
-      ...(cursor !== undefined ? { cursor } : {}),
-    });
+    return app.query.syncRuns.listRuns(pickDefined({ limit, cursor }));
   });
 
   app.get('/sync/:id', async (request, reply) => {

@@ -111,17 +111,7 @@ export class TaxonomySyncService {
   }
 
   async loadSeriesMetadataMap(provider: ProviderId = 'kalshi'): Promise<Map<string, SeriesMetadata>> {
-    const raw = await this.repos.taxonomy.loadSeriesMap(provider);
-    const map = new Map<string, SeriesMetadata>();
-
-    for (const [seriesTicker, metadata] of raw) {
-      map.set(seriesTicker, {
-        category: metadata.category,
-        tags: metadata.tags,
-      });
-    }
-
-    return map;
+    return this.repos.taxonomy.loadSeriesMap(provider);
   }
 
   async getTaxonomySyncedAt(provider: ProviderId = 'kalshi'): Promise<string | null> {

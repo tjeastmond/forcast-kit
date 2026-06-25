@@ -97,9 +97,9 @@ export async function listEventsWithQuery(query: QueryServices, args: ParsedArgs
   });
 
   const formattedEvents = events.map((event) => ({
-    eventTicker: String(event['eventTicker']),
-    category: typeof event['category'] === 'string' ? event['category'] : null,
-    title: String(event['title']),
+    eventTicker: event.eventTicker,
+    category: event.category,
+    title: event.title,
   }));
 
   return { exitCode: 0, message: formatEventList(formattedEvents) };

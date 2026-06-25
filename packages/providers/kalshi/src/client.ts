@@ -36,18 +36,14 @@ export interface FetchSeriesListParams {
   readonly includeProductMetadata?: boolean;
 }
 
-export interface TaxonomySeriesRow {
-  readonly ticker: string;
-  readonly category: string;
-  readonly title: string;
-  readonly tags: readonly string[] | null;
-  readonly last_updated_ts?: string;
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function backoffWithJitter(baseMs: number): number {
+  return baseMs * (0.5 + Math.random() * 0.5);
 }
 
 function parseRetryAfterMs(header: string | null): number | null {
@@ -164,7 +160,7 @@ export class KalshiClient {
 
         if (response.status === 429 || response.status >= 500) {
           const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
-          const backoffMs = retryAfterMs ?? BASE_BACKOFF_MS * 2 ** attempt;
+          const backoffMs = backoffWithJitter(retryAfterMs ?? BASE_BACKOFF_MS * 2 ** attempt);
           logger.warn({
             component: 'kalshi-client',
             msg: 'transient HTTP error, retrying',
@@ -187,7 +183,7 @@ export class KalshiClient {
         }
         lastError = error instanceof Error ? error : new Error(String(error));
         if (attempt < MAX_RETRIES) {
-          const backoffMs = BASE_BACKOFF_MS * 2 ** attempt;
+          const backoffMs = backoffWithJitter(BASE_BACKOFF_MS * 2 ** attempt);
           logger.warn({
             component: 'kalshi-client',
             msg: 'request failed, retrying',

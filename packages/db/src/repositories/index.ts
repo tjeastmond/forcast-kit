@@ -3,10 +3,12 @@ import type {
   NormalizedMarket,
   NormalizedMarketSide,
   ProviderId,
+  SeriesMetadata,
   SyncRunStatus,
 } from '@forecast-kit/core';
+import { pickDefined } from '@forecast-kit/core';
 import type { Focus } from '@forecast-kit/core';
-import { and, eq, isNotNull, notInArray, or, desc } from 'drizzle-orm';
+import { and, eq, isNotNull, notInArray, or, desc, sql } from 'drizzle-orm';
 import {
   events,
   marketFocusTags,
@@ -26,6 +28,18 @@ function isoNow(): string {
 
 function toIsoDate(date: Date): string {
   return date.toISOString();
+}
+
+function parseTagsJson(json: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((value): value is string => typeof value === 'string');
+    }
+  } catch {
+    // invalid JSON — treat as empty tags
+  }
+  return [];
 }
 
 export class EventRepository {
@@ -132,6 +146,12 @@ export class MarketRepository {
       .where(and(eq(markets.provider, provider), notInArray(markets.id, seenIds)));
   }
 
+  async getIdByTicker(ticker: string): Promise<number | null> {
+    const [row] = await this._db.select({ id: markets.id }).from(markets).where(eq(markets.ticker, ticker)).limit(1);
+
+    return row?.id ?? null;
+  }
+
   async updatePartial(
     ticker: string,
     fields: {
@@ -146,33 +166,27 @@ export class MarketRepository {
       isStale?: boolean;
     },
   ): Promise<number | null> {
-    const [existing] = await this._db
-      .select({ id: markets.id })
-      .from(markets)
-      .where(eq(markets.ticker, ticker))
-      .limit(1);
-    if (!existing) {
-      return null;
-    }
-
     const now = isoNow();
-    await this._db
+    const [updated] = await this._db
       .update(markets)
       .set({
-        ...(fields.title !== undefined ? { title: fields.title } : {}),
-        ...(fields.subtitle !== undefined ? { subtitle: fields.subtitle } : {}),
-        ...(fields.status !== undefined ? { status: fields.status } : {}),
-        ...(fields.yesBid !== undefined ? { yesBid: fields.yesBid } : {}),
-        ...(fields.yesAsk !== undefined ? { yesAsk: fields.yesAsk } : {}),
-        ...(fields.noBid !== undefined ? { noBid: fields.noBid } : {}),
-        ...(fields.noAsk !== undefined ? { noAsk: fields.noAsk } : {}),
-        ...(fields.lastPrice !== undefined ? { lastPrice: fields.lastPrice } : {}),
-        ...(fields.isStale !== undefined ? { isStale: fields.isStale } : {}),
+        ...pickDefined({
+          title: fields.title,
+          subtitle: fields.subtitle,
+          status: fields.status,
+          yesBid: fields.yesBid,
+          yesAsk: fields.yesAsk,
+          noBid: fields.noBid,
+          noAsk: fields.noAsk,
+          lastPrice: fields.lastPrice,
+          isStale: fields.isStale,
+        }),
         updatedAt: now,
       })
-      .where(eq(markets.id, existing.id));
+      .where(eq(markets.ticker, ticker))
+      .returning({ id: markets.id });
 
-    return existing.id;
+    return updated?.id ?? null;
   }
 }
 
@@ -358,13 +372,15 @@ export class TaxonomyRepository {
       rawJson: unknown;
     }[],
   ): Promise<number> {
-    const now = isoNow();
-    let count = 0;
+    if (rows.length === 0) {
+      return 0;
+    }
 
-    for (const row of rows) {
-      await this._db
-        .insert(providerSeries)
-        .values({
+    const now = isoNow();
+    await this._db
+      .insert(providerSeries)
+      .values(
+        rows.map((row) => ({
           provider,
           seriesTicker: row.seriesTicker,
           category: row.category,
@@ -373,39 +389,29 @@ export class TaxonomyRepository {
           lastUpdatedTs: row.lastUpdatedTs,
           rawJson: JSON.stringify(row.rawJson),
           syncedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [providerSeries.provider, providerSeries.seriesTicker],
-          set: {
-            category: row.category,
-            title: row.title,
-            tagsJson: JSON.stringify(row.tags),
-            lastUpdatedTs: row.lastUpdatedTs,
-            rawJson: JSON.stringify(row.rawJson),
-            syncedAt: now,
-          },
-        });
-      count += 1;
-    }
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [providerSeries.provider, providerSeries.seriesTicker],
+        set: {
+          category: sql`excluded.category`,
+          title: sql`excluded.title`,
+          tagsJson: sql`excluded.tags_json`,
+          lastUpdatedTs: sql`excluded.last_updated_ts`,
+          rawJson: sql`excluded.raw_json`,
+          syncedAt: now,
+        },
+      });
 
-    return count;
+    return rows.length;
   }
 
-  async loadSeriesMap(provider: ProviderId): Promise<Map<string, { category: string; tags: string[] }>> {
+  async loadSeriesMap(provider: ProviderId): Promise<Map<string, SeriesMetadata>> {
     const rows = await this._db.select().from(providerSeries).where(eq(providerSeries.provider, provider));
-    const map = new Map<string, { category: string; tags: string[] }>();
+    const map = new Map<string, SeriesMetadata>();
 
     for (const row of rows) {
-      let tags: string[] = [];
-      try {
-        const parsed: unknown = JSON.parse(row.tagsJson);
-        if (Array.isArray(parsed)) {
-          tags = parsed.filter((value): value is string => typeof value === 'string');
-        }
-      } catch {
-        tags = [];
-      }
-      map.set(row.seriesTicker, { category: row.category, tags });
+      map.set(row.seriesTicker, { category: row.category, tags: parseTagsJson(row.tagsJson) });
     }
 
     return map;
@@ -461,25 +467,13 @@ export class TaxonomyRepository {
       .orderBy(providerSeries.seriesTicker)
       .limit(limit);
 
-    return rows.map((row) => {
-      let tags: string[] = [];
-      try {
-        const parsed: unknown = JSON.parse(row.tagsJson);
-        if (Array.isArray(parsed)) {
-          tags = parsed.filter((value): value is string => typeof value === 'string');
-        }
-      } catch {
-        tags = [];
-      }
-
-      return {
-        seriesTicker: row.seriesTicker,
-        category: row.category,
-        title: row.title,
-        tags,
-        lastUpdatedTs: row.lastUpdatedTs,
-      };
-    });
+    return rows.map((row) => ({
+      seriesTicker: row.seriesTicker,
+      category: row.category,
+      title: row.title,
+      tags: parseTagsJson(row.tagsJson),
+      lastUpdatedTs: row.lastUpdatedTs,
+    }));
   }
 
   async listSeriesTickersByCategory(provider: ProviderId, category: string): Promise<string[]> {

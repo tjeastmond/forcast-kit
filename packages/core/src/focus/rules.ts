@@ -16,17 +16,19 @@ export interface FocusDerivationContext {
 
 const RULES = rulesJson as FocusRules;
 
-function textIncludesKeyword(text: string, keyword: string): boolean {
-  return text.toLowerCase().includes(keyword.toLowerCase());
-}
-
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function textMatchesKeyword(text: string, keyword: string): boolean {
-  const pattern = new RegExp(`\\b${escapeRegExp(keyword)}\\b`, 'i');
-  return pattern.test(text);
+const COMPILED_KEYWORD_PATTERNS: Map<Focus, RegExp[]> = new Map(
+  (Object.entries(RULES) as [Focus, FocusRule][]).map(([focus, rule]) => [
+    focus,
+    rule.keywords.map((keyword) => new RegExp(`\\b${escapeRegExp(keyword)}\\b`, 'i')),
+  ]),
+);
+
+function textIncludesKeyword(text: string, keyword: string): boolean {
+  return text.toLowerCase().includes(keyword.toLowerCase());
 }
 
 function matchesCategory(category: string | null, ruleCategories: readonly string[]): boolean {
@@ -47,9 +49,12 @@ function matchesSeriesPrefix(seriesTicker: string, prefixes: readonly string[]):
   return prefixes.some((prefix) => seriesTicker.startsWith(prefix));
 }
 
-function matchesKeywords(market: NormalizedMarket, keywords: readonly string[]): boolean {
+function matchesKeywords(market: NormalizedMarket, patterns: readonly RegExp[]): boolean {
+  if (patterns.length === 0) {
+    return false;
+  }
   const searchText = [market.title, market.subtitle, market.ticker, market.eventTicker].join(' ');
-  return keywords.some((keyword) => textMatchesKeyword(searchText, keyword));
+  return patterns.some((pattern) => pattern.test(searchText));
 }
 
 function resolveCategory(market: NormalizedMarket, context?: FocusDerivationContext): string | null {
@@ -70,12 +75,8 @@ export function deriveFocusTags(market: NormalizedMarket, context?: FocusDerivat
     const categoryMatch = matchesCategory(category, rule.kalshiCategories);
     const kalshiTagMatch = matchesKalshiTags(kalshiTags, rule.kalshiTags);
     const seriesMatch = matchesSeriesPrefix(market.seriesTicker, rule.seriesPrefixes);
-    const keywordMatch = matchesKeywords(market, rule.keywords);
-
-    if (focus === 'sports' && category?.toLowerCase().includes('sport')) {
-      tags.push('sports');
-      continue;
-    }
+    const keywordPatterns = COMPILED_KEYWORD_PATTERNS.get(focus) ?? [];
+    const keywordMatch = matchesKeywords(market, keywordPatterns);
 
     if (categoryMatch || kalshiTagMatch || seriesMatch || keywordMatch) {
       tags.push(focus);

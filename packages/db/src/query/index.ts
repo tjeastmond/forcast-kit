@@ -1,5 +1,5 @@
 import type { Focus } from '@forecast-kit/core';
-import { deriveMarketMetrics } from '@forecast-kit/core';
+import { deriveMarketMetrics, pickDefined } from '@forecast-kit/core';
 import { and, asc, desc, eq, gt, inArray, like, lt, notInArray, or, sql } from 'drizzle-orm';
 import type { DatabaseClient } from '../database-client.js';
 import { events, marketFocusTags, marketSides, markets, syncRuns } from '../schema/index.js';
@@ -244,6 +244,89 @@ export class MarketQueryService {
     return { markets: summaries, cursor: nextCursor };
   }
 
+  async listMarketsForEventTickers(
+    eventTickers: readonly string[],
+    options: Pick<MarketListOptions, 'focus' | 'exclude' | 'category' | 'tag' | 'status' | 'stale'> = {},
+  ): Promise<Map<string, MarketSummary[]>> {
+    const grouped = new Map<string, MarketSummary[]>();
+    if (eventTickers.length === 0) {
+      return grouped;
+    }
+
+    const whereParts = [inArray(markets.eventTicker, [...eventTickers])];
+
+    if (options.status) {
+      whereParts.push(eq(markets.status, options.status));
+    }
+    if (options.stale !== undefined) {
+      whereParts.push(eq(markets.isStale, options.stale));
+    }
+    if (options.category) {
+      whereParts.push(eq(markets.category, options.category));
+    }
+    if (options.tag) {
+      whereParts.push(
+        sql`EXISTS (SELECT 1 FROM json_each(${markets.seriesTagsJson}) WHERE json_each.value = ${options.tag})`,
+      );
+    }
+    if (options.focus && options.focus.length > 0) {
+      whereParts.push(
+        inArray(
+          markets.id,
+          this._db
+            .select({ id: marketFocusTags.marketId })
+            .from(marketFocusTags)
+            .where(inArray(marketFocusTags.focus, [...options.focus])),
+        ),
+      );
+    }
+    if (options.exclude && options.exclude.length > 0) {
+      whereParts.push(
+        notInArray(
+          markets.id,
+          this._db
+            .select({ id: marketFocusTags.marketId })
+            .from(marketFocusTags)
+            .where(inArray(marketFocusTags.focus, [...options.exclude])),
+        ),
+      );
+    }
+
+    const rows = await this._db
+      .select()
+      .from(markets)
+      .where(and(...whereParts))
+      .orderBy(asc(markets.id))
+      .limit(eventTickers.length * MAX_LIMIT);
+
+    const tagMap = await loadFocusTagsForMarkets(
+      this._db,
+      rows.map((row) => row.id),
+    );
+
+    for (const row of rows) {
+      const summary: MarketSummary = {
+        id: row.id,
+        ticker: row.ticker,
+        eventTicker: row.eventTicker,
+        title: row.title,
+        subtitle: row.subtitle,
+        status: row.status,
+        closeTime: row.closeTime,
+        category: row.category,
+        focusTags: tagMap.get(row.id) ?? [],
+        volume: row.volume,
+        lastPrice: row.lastPrice,
+        isStale: row.isStale,
+      };
+      const list = grouped.get(row.eventTicker) ?? [];
+      list.push(summary);
+      grouped.set(row.eventTicker, list);
+    }
+
+    return grouped;
+  }
+
   async getMarketByTicker(ticker: string): Promise<MarketDetail | null> {
     const [market] = await this._db.select().from(markets).where(eq(markets.ticker, ticker)).limit(1);
     if (!market) {
@@ -286,6 +369,14 @@ export class EventQueryService {
   async listEvents(options: EventListOptions = {}) {
     const limit = clampLimit(options.limit);
     const whereParts = [];
+    const hasMarketFilters = Boolean(
+      options.focus?.length ||
+      options.exclude?.length ||
+      options.category ||
+      options.tag ||
+      options.status ||
+      options.stale !== undefined,
+    );
 
     if (options.q) {
       const pattern = `%${options.q}%`;
@@ -299,23 +390,22 @@ export class EventQueryService {
       }
     }
 
-    if (
-      options.focus?.length ||
-      options.exclude?.length ||
-      options.category ||
-      options.tag ||
-      options.status ||
-      options.stale !== undefined
-    ) {
-      const marketQuery = new MarketQueryService(this._db);
-      const eventTickers = await marketQuery.getEventTickersMatchingFilter({
-        ...(options.focus !== undefined ? { focus: options.focus } : {}),
-        ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
-        ...(options.category !== undefined ? { category: options.category } : {}),
-        ...(options.tag !== undefined ? { tag: options.tag } : {}),
-        ...(options.status !== undefined ? { status: options.status } : {}),
-        ...(options.stale !== undefined ? { stale: options.stale } : {}),
-      });
+    let marketQuery: MarketQueryService | undefined;
+    if (hasMarketFilters || options.includeMarkets) {
+      marketQuery = new MarketQueryService(this._db);
+    }
+
+    const marketFilterOptions = pickDefined({
+      focus: options.focus,
+      exclude: options.exclude,
+      category: options.category,
+      tag: options.tag,
+      status: options.status,
+      stale: options.stale,
+    });
+
+    if (hasMarketFilters && marketQuery) {
+      const eventTickers = await marketQuery.getEventTickersMatchingFilter(marketFilterOptions);
       if (eventTickers.length === 0) {
         return { events: [], cursor: null };
       }
@@ -333,26 +423,24 @@ export class EventQueryService {
 
     const hasMore = rows.length > limit;
     const pageRows = hasMore ? rows.slice(0, limit) : rows;
-    const marketQuery = new MarketQueryService(this._db);
 
-    const result = [];
-    for (const event of pageRows) {
-      const entry: Record<string, unknown> = { ...event };
-      if (options.includeMarkets) {
-        const { markets: eventMarkets } = await marketQuery.listMarkets({
-          eventTicker: event.eventTicker,
-          ...(options.focus !== undefined ? { focus: options.focus } : {}),
-          ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
-          ...(options.category !== undefined ? { category: options.category } : {}),
-          ...(options.tag !== undefined ? { tag: options.tag } : {}),
-          ...(options.status !== undefined ? { status: options.status } : {}),
-          ...(options.stale !== undefined ? { stale: options.stale } : {}),
-          limit: MAX_LIMIT,
-        });
-        entry['markets'] = eventMarkets;
-      }
-      result.push(entry);
+    let marketsByEvent: Map<string, MarketSummary[]> | undefined;
+    if (options.includeMarkets && pageRows.length > 0 && marketQuery) {
+      marketsByEvent = await marketQuery.listMarketsForEventTickers(
+        pageRows.map((event) => event.eventTicker),
+        marketFilterOptions,
+      );
     }
+
+    const result = pageRows.map((event) => {
+      if (!options.includeMarkets) {
+        return { ...event };
+      }
+      return {
+        ...event,
+        markets: marketsByEvent?.get(event.eventTicker) ?? [],
+      };
+    });
 
     const lastRow = pageRows[pageRows.length - 1];
     const nextCursor = hasMore && lastRow ? encodeCursor(lastRow.id) : null;
@@ -371,8 +459,10 @@ export class EventQueryService {
     const marketQuery = new MarketQueryService(this._db);
     const { markets: eventMarkets } = await marketQuery.listMarkets({
       eventTicker,
-      ...(options.focus !== undefined ? { focus: options.focus } : {}),
-      ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
+      ...pickDefined({
+        focus: options.focus,
+        exclude: options.exclude,
+      }),
       limit: MAX_LIMIT,
     });
 

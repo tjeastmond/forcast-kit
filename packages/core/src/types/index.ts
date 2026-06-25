@@ -1,28 +1,8 @@
-export type Focus =
-  | 'politics'
-  | 'politicians'
-  | 'mentions'
-  | 'weather'
-  | 'economics'
-  | 'technology'
-  | 'crypto'
-  | 'entertainment'
-  | 'sports';
-
-export const FOCUS_VALUES = [
-  'politics',
-  'politicians',
-  'mentions',
-  'weather',
-  'economics',
-  'technology',
-  'crypto',
-  'entertainment',
-  'sports',
-] as const satisfies readonly Focus[];
+export { FOCUS_VALUES, type Focus } from '@forecast-kit/types';
 
 export type ProviderId = 'kalshi' | 'polymarket';
 
+/** Kalshi market lifecycle status. `'active'` is Kalshi-specific (distinct from `'open'`). */
 export type MarketStatus = 'open' | 'closed' | 'settled' | 'unopened' | 'active';
 
 export interface NormalizedEvent {

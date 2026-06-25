@@ -1,7 +1,7 @@
 'use client';
 
 import { FOCUS_VALUES } from '@/lib/constants';
-import { fetchTaxonomy } from '@/lib/api';
+import { fetchTaxonomy, type TaxonomyResponse } from '@/lib/api';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -13,6 +13,16 @@ import { type MarketFilterState } from '@/lib/marketFilters';
 import { cn } from '@/lib/utils';
 
 const STATUS_OPTIONS = ['open', 'closed', 'settled', 'active', 'unopened'] as const;
+
+let taxonomyCache: Promise<TaxonomyResponse> | null = null;
+
+function fetchTaxonomyCached(): Promise<TaxonomyResponse> {
+  taxonomyCache ??= fetchTaxonomy().catch((error: unknown) => {
+    taxonomyCache = null;
+    throw error;
+  });
+  return taxonomyCache;
+}
 
 export function MarketFilters({
   filters,
@@ -33,7 +43,7 @@ export function MarketFilters({
   const [tagOptions, setTagOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
-    void fetchTaxonomy()
+    void fetchTaxonomyCached()
       .then((taxonomy) => {
         setCategoryOptions(taxonomy.categories.map((entry) => ({ value: entry.name, label: entry.name })));
         const tags = new Set<string>();

@@ -2,7 +2,7 @@
 
 import { FOCUS_VALUES, type Focus } from '@/lib/constants';
 import { SettingsIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Input, Label } from '@/components/ui/input';
@@ -53,7 +53,7 @@ export function SyncAdminDialog({ open, onOpenChange }: { open: boolean; onOpenC
     };
   }, [runningId]);
 
-  async function handleSync() {
+  const handleSync = useCallback(async () => {
     const parseFocus = (value: string): Focus[] =>
       value
         .split(',')
@@ -73,7 +73,7 @@ export function SyncAdminDialog({ open, onOpenChange }: { open: boolean; onOpenC
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Sync failed');
     }
-  }
+  }, [excludeText, focusText, full, maxPages]);
 
   if (!open) {
     return null;

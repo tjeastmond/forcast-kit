@@ -9,10 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `@forecast-kit/db`: batch event market queries, single `MarketQueryService` in `listEvents`, `UPDATE … RETURNING` for admin partial updates, batch taxonomy series upsert, `PRAGMA foreign_keys = ON`, shared `parseTagsJson` / `pickDefined`, and canonical `TaxonomySeriesRow` on the taxonomy module
+- API routes: shared `parseLimit` helper, `pickDefined` for optional query/body fields, and lighter admin focus-tag lookup before response fetch
+
 ### Added
 
+- `@forecast-kit/types` workspace package (zero runtime deps) as the shared source for `Focus`, `FOCUS_VALUES`, and `MarketExportV1`
 - GitHub Actions **Build** job (`format:check`, `lint`, `typecheck`, `ui:build`) on push to `main` and pull requests
 - MIT License (`LICENSE`) at repo root
+
+### Changed
+
+- Explorer UI caches taxonomy fetches, market detail/export payloads, and caps the events list cache at 50 entries (FIFO)
+
+### Fixed
+
+- Removed unused `setCursorStack` from `useEventListParams` public API; wrapped `SyncAdminDialog.handleSync` in `useCallback`
+
+### Fixed
+
+- Code review follow-ups: remove redundant sports focus special-case; pre-compile keyword RegExp patterns; add `pickDefined` helper and use in sync service; document Kalshi-specific `active` market status; clarify export schema parse intent; add jitter to Kalshi retry backoff; canonical `TaxonomySeriesRow` on `@forecast-kit/db/taxonomy`
 
 ## [2026-06-23]
 

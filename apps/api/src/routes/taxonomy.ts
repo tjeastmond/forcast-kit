@@ -1,13 +1,6 @@
-import { logger, type ProviderId } from '@forecast-kit/core';
+import { logger, pickDefined, type ProviderId } from '@forecast-kit/core';
 import type { FastifyPluginCallback } from 'fastify';
-
-function parseLimit(value: string | undefined): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
+import { parseLimit } from '../utils.js';
 
 export const taxonomyRoutes: FastifyPluginCallback = (app, _opts, done) => {
   app.get('/taxonomy', async (request) => {
@@ -73,10 +66,7 @@ export const taxonomyRoutes: FastifyPluginCallback = (app, _opts, done) => {
     const category = typeof query['category'] === 'string' ? query['category'] : undefined;
     const limit = parseLimit(typeof query['limit'] === 'string' ? query['limit'] : undefined);
 
-    const series = await app.repos.taxonomy.listSeries(provider, {
-      ...(category !== undefined ? { category } : {}),
-      ...(limit !== undefined ? { limit } : {}),
-    });
+    const series = await app.repos.taxonomy.listSeries(provider, pickDefined({ category, limit }));
 
     return { provider, series };
   });

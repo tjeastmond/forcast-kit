@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/types" },
     { "path": "./packages/core" },
     { "path": "./packages/db" },
     { "path": "./packages/providers/kalshi" },

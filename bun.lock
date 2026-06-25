@@ -52,6 +52,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@forecast-kit/core": "workspace:*",
+        "@forecast-kit/types": "workspace:*",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^0.525.0",
@@ -73,6 +74,7 @@
       "name": "@forecast-kit/core",
       "version": "0.0.0",
       "dependencies": {
+        "@forecast-kit/types": "workspace:*",
         "zod": "^3.25.51",
       },
     },
@@ -93,6 +95,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@forecast-kit/core": "workspace:*",
+        "@forecast-kit/db": "workspace:*",
         "zod": "^3.25.51",
       },
     },
@@ -102,6 +105,10 @@
       "dependencies": {
         "@forecast-kit/core": "workspace:*",
       },
+    },
+    "packages/types": {
+      "name": "@forecast-kit/types",
+      "version": "0.0.0",
     },
   },
   "packages": {
@@ -212,6 +219,8 @@
     "@forecast-kit/provider-kalshi": ["@forecast-kit/provider-kalshi@workspace:packages/providers/kalshi"],
 
     "@forecast-kit/provider-polymarket": ["@forecast-kit/provider-polymarket@workspace:packages/providers/polymarket"],
+
+    "@forecast-kit/types": ["@forecast-kit/types@workspace:packages/types"],
 
     "@forecast-kit/ui": ["@forecast-kit/ui@workspace:apps/ui"],
 
