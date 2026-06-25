@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${robotoMono.variable} font-sans antialiased`}>
+      <body className={`${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider initialTheme={initialTheme}>
           {children}
           <Toaster position="top-right" richColors closeButton />
