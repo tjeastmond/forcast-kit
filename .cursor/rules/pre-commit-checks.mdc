@@ -1,11 +1,13 @@
 ---
-description: Run format, typecheck, lint, and test before commit or push; never push on failure
+description: Run format, typecheck, lint, test, and build before commit or push; never push on failure
 alwaysApply: true
 ---
 
 # Pre-commit and pre-push checks
 
 Before **every commit** and **every push**, run the full check suite from the repo root. **Do not commit or push** if any step fails.
+
+**If this is a push to GitHub, or if we're committing to GitHub right now, run this check.** The full gate — including `bun run build` — applies before any GitHub push or any commit intended for a PR on GitHub, not only immediately before merge.
 
 ## Required sequence (Bun)
 
@@ -16,6 +18,7 @@ bun run format
 bun run typecheck
 bun run lint
 bun run test
+bun run build
 ```
 
 | Step | Command | Purpose |
@@ -24,6 +27,7 @@ bun run test
 | Typecheck | `bun run typecheck` | `tsc --build` across project references |
 | Lint | `bun run lint` | ESLint (strict TypeScript rules) |
 | Test | `bun run test` | Vitest (`**/*.spec.ts`) |
+| Build | `bun run build` | Compile CLI, API, packages, and explorer UI (`ui:build`) |
 
 ## Gate rules
 
@@ -36,11 +40,12 @@ bun run test
 
 - Before `git commit`
 - Before `git push` (including when the user asks to commit-and-push)
+- Before opening or updating a PR on GitHub
 - After significant code changes, before handing off work
 
 ## On failure
 
 1. Stop immediately.
 2. Read and fix the reported errors.
-3. Re-run all four commands from the beginning.
+3. Re-run all five commands from the beginning.
 4. Only then commit or push.

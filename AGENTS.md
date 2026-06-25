@@ -190,9 +190,18 @@ bun run format
 bun run typecheck
 bun run lint
 bun run test
+bun run build
 ```
 
-**Before commit or push:** run `bun run build` plus the four quality checks (`format`, `typecheck`, `lint`, `test`); all must pass. Do not push to the remote if any check fails.
+**Before commit or push:** run the full gate above (`format`, `typecheck`, `lint`, `test`, `build`); all must pass. Do not push to the remote if any check fails. Run the same gate **before opening or updating a PR on GitHub**, not only immediately before merge.
+
+### CI and docs-only PRs
+
+GitHub Actions runs the full CI suite on every push/PR to `main`, including a separate **Build** job (`format:check`, `lint`, `bun run build`). Docs-only changes are not exempt.
+
+- **`format:check` must pass.** Prettier enforces table alignment in `AGENTS.md` and other markdown; run `bun run format` locally before push.
+- **Independent docs PRs against `main` can fail** if `main` has known build or type errors unrelated to your edits. Stack docs on the fix branch, or merge fixes first, then retarget to `main`.
+- **Run `bun run build` locally before any GitHub push** — including when opening a PR — so CI Build job failures are caught before CI runs.
 
 ### First Success Criteria (Phase 3 exit gate)
 
@@ -410,7 +419,7 @@ Do **not** import `@forecast-kit/db` main entry in Vitest-only test files if you
 
 Do not bump `package.json` workspace versions (`0.0.0` placeholders) unless the user asks; **`CHANGELOG.md` is the product version source of truth.**
 
-Cursor rule: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) — format, typecheck, lint, test; no commit/push on failure.
+Cursor rule: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) — format, typecheck, lint, test, build; no commit/push on failure.
 
 ---
 
@@ -442,7 +451,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 ## Learned User Preferences
 
 - Update `CHANGELOG.md` for notable changes under `[Unreleased]`; cut a **dated** release section when shipping (optional semver label in body; default patch bump `0.5.x` when tagging) — do not bump minor/major without explicit user approval.
-- Before every **commit or push**, run `bun run format`, `bun run typecheck`, `bun run lint`, and `bun run test` — all must pass; never push if any check fails.
+- Before every **commit or push** (including when opening a PR), run `bun run format`, `bun run typecheck`, `bun run lint`, `bun run test`, and `bun run build` — all must pass; never push if any check fails.
 - When committing from mixed WIP, stage and push only files related to the current change; exclude unrelated work-in-progress.
 - When directed to continue through the plan, loop autonomously through phases until MVP exit gates pass without pausing between phases for approval.
 - Initial commits should document what changed (via CHANGELOG `[Unreleased]` entries and conventional commit messages).
