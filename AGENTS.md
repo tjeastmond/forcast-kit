@@ -447,6 +447,7 @@ Phases 1–5 are complete (v0.5.0). Post-MVP work: implement Polymarket fetch pe
 - Initial commits should document what changed (via CHANGELOG `[Unreleased]` entries and conventional commit messages).
 - Version line stays at **0.5.x** (patch) until the user requests a minor (`0.6.0`) or major (`1.0.0`) bump.
 - Mirror **applied.dev** visual/UX patterns (card lists, filters, detail sheets) when building or extending `apps/ui`.
+- Keep Kalshi/API-sourced market and event titles in original casing; do not title-case card or sheet titles (breaks acronyms like BTC).
 - When landing multi-topic work, split into **logical commits** by layer (provider, db, api, cli, ui, docs) rather than one monolithic commit.
 
 ---
