@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { execSync, spawn as nodeSpawn, type ChildProcess } from 'node:child_process';
-import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
+import { cleanNextDir, killExplorerPorts, sleep, UI_DIR } from './dev-ports';
 
 interface ManagedProcess {
   readonly label: string;
@@ -9,19 +9,8 @@ interface ManagedProcess {
 }
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const UI_DIR = path.join(ROOT, 'apps/ui');
-const NEXT_DIR = path.join(UI_DIR, '.next');
 const children: ManagedProcess[] = [];
 let shuttingDown = false;
-
-function cleanNextDir(): void {
-  if (!existsSync(NEXT_DIR)) {
-    return;
-  }
-
-  rmSync(NEXT_DIR, { recursive: true, force: true });
-  console.log('Removed apps/ui/.next');
-}
 
 function listChildPids(pid: number): number[] {
   if (process.platform === 'win32') {
@@ -131,10 +120,12 @@ function onSignal(signal: NodeJS.Signals): void {
 process.on('SIGTERM', () => onSignal('SIGTERM'));
 process.on('SIGINT', () => onSignal('SIGINT'));
 
+killExplorerPorts();
+await sleep(300);
 cleanNextDir();
 
 spawnChild('api', process.execPath, ['apps/api/src/index.ts']);
-spawnChild('ui', process.execPath, ['run', 'dev'], UI_DIR);
+spawnChild('ui', process.execPath, ['x', 'next', 'dev', '--port', '3848'], UI_DIR);
 
 await Promise.all(
   children.map(

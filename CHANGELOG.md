@@ -58,6 +58,7 @@ Post-MVP polish: explorer UI, Kalshi taxonomy sync, CLI/API filter parity, and f
 ### Fixed
 
 - Explorer UI dev scripts (`bun run ui:app`, `@forecast-kit/ui` `dev`) now remove stale `.next` before starting Next.js, matching `bun run ui` and avoiding missing webpack chunk errors (e.g. `Cannot find module './26.js'`) after large UI refactors
+- Explorer dev startup (`bun run ui`, `bun run ui:app`) stops existing processes on ports 3847/3848 before removing `.next`, avoiding webpack runtime errors (`Cannot read properties of undefined (reading 'call')`) when a stale Next.js process keeps running after its build output was deleted
 - Explorer events list no longer throws intermittent `TypeError: a[d] is not a function` on `/events`: page is a Server Component with Suspense around the client list, filter helpers import from `@/lib/marketFilters` (not re-exported through a client component), and stored page size reads use `useSyncExternalStore` to avoid SSR/hydration mismatch
 - Explorer events list no longer hits a maximum update depth error when restoring cached pagination state
 - Explorer UI build resolves `@forecast-kit/core/metrics` via subpath export and `transpilePackages` (avoids webpack failing on core barrel `.js` re-exports)

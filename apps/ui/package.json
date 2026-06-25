@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "clean": "rm -rf .next",
-    "dev": "bun run clean && next dev --port 3848",
+    "dev": "bun run ../../scripts/ui-dev.ts",
     "build": "next build",
     "start": "next start --port 3848",
     "typecheck": "tsc --noEmit"
